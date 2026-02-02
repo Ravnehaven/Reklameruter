@@ -15,13 +15,13 @@
     .content { display: none; }
     .content.active { display: block; }
     .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    input, select, textarea { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; }
+    input, select, textarea { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; }
     button { background: #667eea; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
     button:hover { background: #5568d3; }
     table { width: 100%; border-collapse: collapse; margin-top: 15px; }
     th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
     th { background: #667eea; color: white; }
-    .notification { position: fixed; top: 20px; right: 20px; background: #667eea; color: white; padding: 15px; border-radius: 4px; }
+    .notification { position: fixed; top: 20px; right: 20px; background: #667eea; color: white; padding: 15px; border-radius: 4px; z-index: 1000; }
   </style>
 </head>
 <body>
@@ -103,36 +103,75 @@
       
       if (selected.length === 0) { notify('Vælg mindst en rute'); return; }
 
-      notify('⏳ Beregner afstande...');
+      notify('⏳ Beregner afstande via OpenStreetMap...');
 
       const tripRoutes = selected.map((id, i) => ({
         ...routes.find(r => r.id === id),
         comment: document.getElementById(`c${i}`)?.value || ''
       }));
 
+      // Beregn afstande med geocoding
       const kmFrom = await getDistance(HOME, tripRoutes[0].start);
       const kmTo = await getDistance(tripRoutes[tripRoutes.length - 1].end, HOME);
 
       trips.push({ date, driver, routes: tripRoutes, kmFrom, kmTo });
       localStorage.setItem('trips', JSON.stringify(trips));
       
-      notify(`✅ Gemt! ${(kmFrom + kmTo).toFixed(1)} km`);
+      notify(`✅ Gemt! ${kmFrom} + ${kmTo} = ${(parseFloat(kmFrom) + parseFloat(kmTo)).toFixed(1)} km`);
       selected = [];
       updateSelected();
     }
 
     async function getDistance(from, to) {
       try {
-        const url = `https://router.project-osrm.org/route/v1/driving/${encodeURIComponent(from)};${encodeURIComponent(to)}?overview=false`;
+        // Geocode både adressen
+        const fromCoords = await geocode(from);
+        const toCoords = await geocode(to);
+        
+        if (!fromCoords || !toCoords) {
+          console.log(`Geocoding fejlede, bruger fallback 5 km`);
+          return '5';
+        }
+
+        // Beregn distance via OSRM
+        const url = `https://router.project-osrm.org/route/v1/driving/${fromCoords};${toCoords}?overview=false`;
         const res = await fetch(url);
         const data = await res.json();
-        if (data.routes?.[0]) {
+        
+        if (data.routes && data.routes[0]) {
           const km = (data.routes[0].distance / 1000).toFixed(1);
-          console.log(`${from} → ${to} = ${km} km`);
-          return parseFloat(km);
+          console.log(`✓ ${from} → ${to} = ${km} km`);
+          return km;
+        } else {
+          console.log(`OSRM fejl for ${from} → ${to}, bruger fallback`);
+          return '5';
         }
-      } catch(e) { console.error('Afstandsfejl:', e); }
-      return 5;
+      } catch(e) { 
+        console.error('Afstandsfejl:', e);
+        return '5';
+      }
+    }
+
+    async function geocode(address) {
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1&countrycodes=dk`;
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        if (data && data[0]) {
+          const lon = data[0].lon;
+          const lat = data[0].lat;
+          const coords = `${lon},${lat}`;
+          console.log(`Geocoded: "${address}" → ${coords}`);
+          return coords;
+        } else {
+          console.log(`Geocoding fejlede for: "${address}"`);
+          return null;
+        }
+      } catch(e) {
+        console.error('Geocoding fejl:', e);
+        return null;
+      }
     }
 
     function showTab(tab, btn) {
@@ -146,18 +185,44 @@
     }
 
     function showHistory() {
-      const html = trips.map(t => `<h3>${new Date(t.date).toLocaleDateString('da-DK')} - ${t.driver}</h3><table><tr><th>Rute</th><th>Start</th><th>Slut</th><th>Husstande</th></tr>${t.routes.map(r => `<tr><td>${r.id}</td><td>${r.start}</td><td>${r.end}</td><td>${r.houses}</td></tr>`).join('')}</table><p><b>Skat km:</b> ${t.kmFrom} + ${t.kmTo} = ${(parseFloat(t.kmFrom) + parseFloat(t.kmTo)).toFixed(1)}</p>`).join('<hr>');
-      document.getElementById('historyContent').innerHTML = html || 'Ingen kørsler';
+      if (trips.length === 0) {
+        document.getElementById('historyContent').innerHTML = 'Ingen kørsler registreret';
+        return;
+      }
+
+      const html = trips.map(t => `
+        <h3>${new Date(t.date).toLocaleDateString('da-DK')} - ${t.driver}</h3>
+        <table>
+          <tr><th>Rute</th><th>Start</th><th>Slut</th><th>Husstande</th><th>Kommentar</th></tr>
+          ${t.routes.map(r => `<tr><td>${r.id}</td><td>${r.start}</td><td>${r.end}</td><td>${r.houses}</td><td>${r.comment || '-'}</td></tr>`).join('')}
+        </table>
+        <p style="margin-top: 10px;"><b>Skat km:</b> ${t.kmFrom} + ${t.kmTo} = ${(parseFloat(t.kmFrom) + parseFloat(t.kmTo)).toFixed(1)} km</p>
+        <hr style="margin: 20px 0;">
+      `).join('');
+
+      document.getElementById('historyContent').innerHTML = html;
     }
 
     function showSkat() {
+      if (trips.length === 0) {
+        document.getElementById('skatContent').innerHTML = 'Ingen kørsler registreret';
+        return;
+      }
+
       let total = 0;
       const rows = trips.map(t => {
         const sum = parseFloat(t.kmFrom) + parseFloat(t.kmTo);
         total += sum;
         return `<tr><td>${new Date(t.date).toLocaleDateString('da-DK')}</td><td>${t.kmFrom}</td><td>${t.kmTo}</td><td><b>${sum.toFixed(1)}</b></td></tr>`;
       }).join('');
-      document.getElementById('skatContent').innerHTML = `<table><tr><th>Dato</th><th>Hjem→Start</th><th>End→Hjem</th><th>I alt</th></tr>${rows}</table><p><b>Samlet: ${total.toFixed(1)} km</b></p>`;
+
+      document.getElementById('skatContent').innerHTML = `
+        <table>
+          <tr><th>Dato</th><th>Hjem→Start</th><th>End→Hjem</th><th>I alt</th></tr>
+          ${rows}
+        </table>
+        <p style="margin-top: 20px;"><b>Samlet Skat km: ${total.toFixed(1)} km</b></p>
+      `;
     }
 
     function notify(msg) {
@@ -165,7 +230,7 @@
       div.className = 'notification';
       div.textContent = msg;
       document.body.appendChild(div);
-      setTimeout(() => div.remove(), 3000);
+      setTimeout(() => div.remove(), 4000);
     }
 
     function loadTrips() {
