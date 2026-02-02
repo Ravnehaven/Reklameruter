@@ -275,8 +275,8 @@
     const GOOGLE_MAPS_API_KEY = 'AIzaSyBC3gj0G0PSbLL98bCRvt-MiuUZPck0A6Y';
     // VIGTIG: Erstat denne URL med din Google Apps Script deployment URL
     // VIGTIG: Erstat YOUR_SCRIPT_ID med din Google Apps Script deployment URL
-    // Eksempel: 'https://script.google.com/macros/s/AKfycbw1234567890/exec'
-    const PROXY_URL = 'https://script.google.com/macros/s/AKfycbxmSKwuPfvnhFt9yx_CKETNEPhxFlyl1etT3RsYI-KqGWVdA4NtImOKtPs9Yx_f2SjF/exec';
+    // Eksempel: 'https://script.google.com/macros/s/AKfycbw1234567890/dev'
+    const PROXY_URL = 'https://script.google.com/macros/s/AKfycby_ZfV9LC8zyH5UW8L-PG0JjmiCd8sd_R88gGmskkQ/dev';
 
     // Initialize
     window.addEventListener('DOMContentLoaded', async () => {
@@ -342,33 +342,9 @@
     }
 
     async function loadRoutes() {
-      try {
-        const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
-        const response = await fetch(csvUrl);
-        if (response.ok) {
-          const csv = await response.text();
-          const lines = csv.trim().split('\n');
-          for (let i = 1; i < lines.length; i++) {
-            const cells = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
-            if (cells[0] && cells[1]) {
-              routes.push({
-                id: `${cells[0]}-${cells[1]}`,
-                postnummer: cells[0],
-                rutenummer: cells[1],
-                type: cells[2] || '',
-                startAdresse: cells[3] || '',
-                slutAdresse: cells[4] || '',
-                husstande: parseInt(cells[5]) || 0,
-                rutelængde: (parseFloat(cells[7]) || 0) / 1000,
-                omdelertid: parseInt(cells[8]) || 0
-              });
-            }
-          }
-          if (routes.length > 0) return;
-        }
-      } catch (e) { console.log('CSV error:', e); }
-
-      // Demo data
+      // Brug demo data - Google Sheets CSV export virker ikke længere
+      // I fremtiden kan vi bruge Google Sheets API hvis nødvendigt
+      
       routes = [
         { id: '4640-01', postnummer: '4640', rutenummer: '01', type: 'By', startAdresse: 'Vestergade 1, Faxe', slutAdresse: 'Østrågade 50, Faxe', husstande: 240, rutelængde: 12.5, omdelertid: 180 },
         { id: '4640-02', postnummer: '4640', rutenummer: '02', type: 'By', startAdresse: 'Nørregade 1, Faxe', slutAdresse: 'Sydgade 40, Faxe', husstande: 210, rutelængde: 11.2, omdelertid: 165 },
