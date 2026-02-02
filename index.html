@@ -3,39 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🚚 Rute Tracker - Chauffør Dagbok</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <title>🚚 Rute Tracker - Chauffør Dagbog</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { 
-      font-family: 'Segoe UI', Roboto, sans-serif;
-      background: #f5f5f5;
-      color: #333;
-    }
-    .container { max-width: 1600px; margin: 0; }
-    header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    h1 { font-size: 1.8em; margin: 0; }
+    body { font-family: 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+    
+    header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; }
+    h1 { font-size: 1.8em; }
     .subtitle { font-size: 0.9em; opacity: 0.9; }
     
-    .tabs { background: white; display: flex; gap: 0; border-bottom: 2px solid #e0e0e0; margin: 0; padding: 0; position: sticky; top: 60px; z-index: 99; overflow-x: auto; }
-    .tab { padding: 15px 20px; cursor: pointer; border: none; background: none; font-weight: 600; color: #999; border-bottom: 3px solid transparent; font-size: 0.95em; white-space: nowrap; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    
+    .tabs { background: white; display: flex; gap: 0; border-bottom: 2px solid #e0e0e0; overflow-x: auto; }
+    .tab { padding: 15px 20px; cursor: pointer; border: none; background: none; font-weight: 600; color: #999; border-bottom: 3px solid transparent; white-space: nowrap; }
     .tab:hover { color: #667eea; }
     .tab.active { color: #667eea; border-bottom-color: #667eea; }
     
-    .tab-content { display: none; }
+    .tab-content { display: none; padding: 20px; }
     .tab-content.active { display: block; }
     
-    .content { padding: 20px; background: white; min-height: calc(100vh - 140px); }
-    
     .card { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    h2 { font-size: 1.3em; color: #333; margin: 0 0 15px 0; }
-    h3 { font-size: 1.1em; color: #555; margin: 15px 0 10px 0; }
     
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
-    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px; }
     
     label { display: block; font-weight: 600; margin: 0 0 5px 0; font-size: 0.9em; }
-    input, select { width: 100%; padding: 8px 10px; border: 1px solid #d0d0d0; border-radius: 4px; font-size: 0.9em; font-family: inherit; }
+    input, select { width: 100%; padding: 8px 10px; border: 1px solid #d0d0d0; border-radius: 4px; font-size: 0.9em; }
     input:focus, select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1); }
     
     button { padding: 10px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; transition: all 0.2s; font-size: 0.9em; }
@@ -43,389 +35,141 @@
     .btn-primary:hover { background: #5568d3; }
     .btn-secondary { background: #e0e0e0; color: #333; }
     .btn-secondary:hover { background: #d0d0d0; }
-    .btn-danger { background: #ff4757; color: white; padding: 6px 12px; font-size: 0.85em; }
-    .btn-danger:hover { background: #ff3838; }
     
-    /* Tabel styling */
-    .table-wrapper { overflow-x: auto; background: white; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
-    th { background: #f5f5f5; padding: 10px; text-align: left; font-weight: 600; border-bottom: 2px solid #d0d0d0; color: #333; }
-    td { padding: 10px; border-bottom: 1px solid #e0e0e0; }
-    tr:hover { background: #fafafa; }
+    .notification { position: fixed; top: 80px; right: 20px; background: #667eea; color: white; padding: 15px 20px; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1000; }
     
-    .route-entry { background: #f9f9f9; border-left: 4px solid #667eea; padding: 12px; margin: 8px 0; border-radius: 4px; }
-    .route-header { font-weight: 600; margin-bottom: 6px; }
-    .route-details { font-size: 0.85em; color: #666; line-height: 1.4; }
-    
-    .leg-info { background: #f0f0f0; padding: 8px; margin: 4px 0; border-left: 3px solid #764ba2; border-radius: 2px; font-size: 0.85em; }
-    .leg-label { font-weight: 600; color: #333; }
-    .leg-address { color: #666; }
-    
-    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 15px 0; }
-    .stat-box { background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); border-left: 4px solid #667eea; padding: 15px; border-radius: 4px; }
-    .stat-label { font-size: 0.8em; color: #666; }
-    .stat-value { font-size: 1.8em; font-weight: 700; color: #667eea; margin-top: 5px; }
-    
-    .action-buttons { display: flex; gap: 10px; margin: 15px 0; }
-    .action-buttons button { margin: 0; }
-    
-    .day-summary { background: #f0f0f0; border: 1px solid #d0d0d0; padding: 15px; margin-top: 20px; border-radius: 4px; }
-    .summary-row { display: grid; grid-template-columns: 150px 1fr; gap: 15px; margin-bottom: 8px; }
-    .summary-label { font-weight: 600; }
-    .summary-value { }
-    
-    .filter-row { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 20px; }
-    .filter-row > div { flex: 1; }
-    .filter-row button { margin: 0; width: 100%; }
-    
-    .route-number { background: #667eea; color: white; padding: 2px 6px; border-radius: 3px; font-weight: 600; font-size: 0.8em; }
-    
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
-    .modal.active { display: flex; }
-    .modal-content { background: white; padding: 25px; border-radius: 8px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; }
-    .modal-close { background: none; border: none; font-size: 1.5em; cursor: pointer; float: right; }
-
-    @media(max-width: 1024px) {
-      .grid-2, .grid-3 { grid-template-columns: 1fr; }
-      .stats { grid-template-columns: repeat(2, 1fr); }
-      table { font-size: 0.8em; }
-      th, td { padding: 8px; }
-    }
-    @media(max-width: 640px) {
-      .stats { grid-template-columns: 1fr; }
-      h1 { font-size: 1.3em; }
-      .tab { padding: 12px 15px; font-size: 0.85em; }
-    }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th { background: #667eea; color: white; padding: 10px; text-align: left; }
+    td { border: 1px solid #e0e0e0; padding: 10px; }
+    tr:hover { background: #f9f9f9; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
+  <header>
+    <div class="container">
       <h1>🚚 Rute Tracker</h1>
       <p class="subtitle">Chauffør dagbog med Skat & Acubiz integration</p>
-    </header>
-
-    <div class="tabs">
-      <button class="tab active" onclick="switchTab(event, 'input')">📝 Daglig Indtastning</button>
-      <button class="tab" onclick="switchTab(event, 'history')">📅 Historik</button>
-      <button class="tab" onclick="switchTab(event, 'skat')">💰 Skat Befordring</button>
-      <button class="tab" onclick="switchTab(event, 'acubiz')">📊 Acubiz Data</button>
-      <button class="tab" onclick="switchTab(event, 'pdf')">📄 PDF/CSV Eksport</button>
     </div>
+  </header>
 
-    <div class="content">
-
-      <!-- TAB: DAGLIG INDTASTNING -->
-      <div id="input" class="tab-content active">
-        <div class="card">
-          <h2>Indtast Dagens Kørsler</h2>
-          
-          <div class="grid-2">
-            <div>
-              <label>Dato</label>
-              <input type="date" id="dateInput">
-            </div>
-            <div>
-              <label>Chauffør</label>
-              <input type="text" id="driverName" placeholder="Dit navn">
-            </div>
-          </div>
-
-          <h3>Vælg Ruter (1-6 ruter)</h3>
-          <p style="margin-bottom: 10px; color: #666;">Valgte: <strong id="routeCountInput">0</strong> af max 6 ruter</p>
-          
-          <select id="routeSelect"></select>
-
-          <div id="selectedRoutesList"></div>
-
-          <div class="action-buttons" id="saveSection" style="display: none;">
-            <button class="btn-primary" onclick="saveDailyTrip()">✅ Gem Dagens Kørsler</button>
-            <button class="btn-secondary" onclick="clearRoutes()">🔄 Nulstil</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB: HISTORIK -->
-      <div id="history" class="tab-content">
-        <div class="card">
-          <h2>Kørselshistorik - Detaljeret</h2>
-          
-          <div class="filter-row">
-            <div>
-              <label>Fra dato</label>
-              <input type="date" id="filterFromDate">
-            </div>
-            <div>
-              <label>Til dato</label>
-              <input type="date" id="filterToDate">
-            </div>
-            <div>
-              <button class="btn-primary" onclick="updateHistoryTable()">🔍 Filtrer</button>
-            </div>
-          </div>
-
-          <div id="historyContent"></div>
-        </div>
-      </div>
-
-      <!-- TAB: SKAT BEFORDRING -->
-      <div id="skat" class="tab-content">
-        <div class="card">
-          <h2>Skat Befordringsfradrag</h2>
-          <p style="color: #666; margin-bottom: 15px;">Km fra hjem til første rute + fra sidste rute til hjem</p>
-          
-          <div class="filter-row">
-            <div>
-              <label>Fra dato</label>
-              <input type="date" id="skatFromDate">
-            </div>
-            <div>
-              <label>Til dato</label>
-              <input type="date" id="skatToDate">
-            </div>
-            <div>
-              <button class="btn-primary" onclick="generateSkatReport()">📋 Generer Rapport</button>
-            </div>
-          </div>
-
-          <div id="skatReport"></div>
-        </div>
-      </div>
-
-      <!-- TAB: ACUBIZ DATA -->
-      <div id="acubiz" class="tab-content">
-        <div class="card">
-          <h2>Acubiz - Tjenestekørsel</h2>
-          <p style="color: #666; margin-bottom: 15px;">Kørsel mellem ruter med start- og slutadresse</p>
-          
-          <div class="filter-row">
-            <div>
-              <label>Fra dato</label>
-              <input type="date" id="acubizFromDate">
-            </div>
-            <div>
-              <label>Til dato</label>
-              <input type="date" id="acubizToDate">
-            </div>
-            <div>
-              <button class="btn-primary" onclick="generateAcubizReport()">📊 Generer Data</button>
-            </div>
-          </div>
-
-          <div id="acubizReport"></div>
-        </div>
-      </div>
-
-      <!-- TAB: PDF/CSV EKSPORT -->
-      <div id="pdf" class="tab-content">
-        <div class="card">
-          <h2>PDF / CSV Eksport</h2>
-          
-          <div class="grid-2" style="margin-bottom: 20px;">
-            <div>
-              <label>Format</label>
-              <select id="exportFormat">
-                <option value="csv">CSV (Excel)</option>
-                <option value="pdf">PDF (Rapport)</option>
-              </select>
-            </div>
-            <div>
-              <label>Rapport type</label>
-              <select id="exportType">
-                <option value="history">Historik (alle ruter + samlet)</option>
-                <option value="skat">Skat Befordring</option>
-                <option value="acubiz">Acubiz Tjenestekørsel</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="grid-3" style="margin-bottom: 20px;">
-            <div>
-              <label>Fra dato</label>
-              <input type="date" id="exportFromDate">
-            </div>
-            <div>
-              <label>Til dato</label>
-              <input type="date" id="exportToDate">
-            </div>
-            <div style="display: flex; align-items: flex-end;">
-              <button class="btn-primary" onclick="handleExport()" style="width: 100%;">📥 Eksportér</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('input')">📝 Daglig Indtastning</button>
+    <button class="tab" onclick="switchTab('history')">📅 Historik</button>
+    <button class="tab" onclick="switchTab('skat')">💰 Skat Befordring</button>
   </div>
 
-  <!-- MODAL FOR DETALJER -->
-  <div id="detailsModal" class="modal">
-    <div class="modal-content">
-      <button class="modal-close" onclick="closeModal()">×</button>
-      <div id="modalBody"></div>
+  <div class="container">
+    <!-- TAB: DAGLIG INDTASTNING -->
+    <div id="input" class="tab-content active">
+      <div class="card">
+        <h2>Registrer Dagens Kørsler</h2>
+        
+        <div class="grid-2">
+          <div>
+            <label>Dato</label>
+            <input type="date" id="dateInput">
+          </div>
+          <div>
+            <label>Chauffør Navn</label>
+            <input type="text" id="driverName" placeholder="Dit navn">
+          </div>
+        </div>
+
+        <div>
+          <label>Vælg Ruter (1-6)</label>
+          <select id="routeSelect" multiple size="8"></select>
+          <p style="font-size: 0.8em; margin-top: 5px; color: #999;">Hold Ctrl (Cmd) + Klik for at vælge flere</p>
+        </div>
+
+        <div id="selectedRoutes" style="margin-top: 20px;"></div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button class="btn-primary" onclick="saveDailyTrip()">✅ Gem Dagens Kørsler</button>
+          <button class="btn-secondary" onclick="clearSelection()">🔄 Nulstil</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: HISTORIK -->
+    <div id="history" class="tab-content">
+      <div class="card">
+        <h2>📅 Historik</h2>
+        <div id="historyContent"></div>
+      </div>
+    </div>
+
+    <!-- TAB: SKAT BEFORDRING -->
+    <div id="skat" class="tab-content">
+      <div class="card">
+        <h2>💰 Skat Befordringsfradrag</h2>
+        <div id="skatContent"></div>
+      </div>
     </div>
   </div>
 
   <script>
-    let routes = [];
-    let trips = [];
-    let selectedRoutes = [];
     const HOME_ADDRESS = 'Rosenvænget 2A, 4640 Faxe';
-    const SHEET_ID = '1XBDnloUNP6PNmAxyxcytCYoQYv2rGXGpxct6H5tjHa8';
-    const GOOGLE_MAPS_API_KEY = 'AIzaSyBC3gj0G0PSbLL98bCRvt-MiuUZPck0A6Y';
-    // VIGTIG: Erstat denne URL med din Google Apps Script deployment URL
-    // VIGTIG: Erstat YOUR_SCRIPT_ID med din Google Apps Script deployment URL
-    // Eksempel: 'https://script.google.com/macros/s/AKfycbw1234567890/dev'
-    const PROXY_URL = 'https://script.google.com/macros/s/AKfycby_ZfV9LC8zyH5UW8L-PG0JjmiCd8sd_R88gGmskkQ/dev';
+    
+    let trips = [];
+    let routes = [];
+    let selectedRoutes = [];
 
-    // Initialize
-    window.addEventListener('DOMContentLoaded', async () => {
-      const today = new Date().toISOString().split('T')[0];
-      const thirtyDaysAgo = new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0];
-      
-      document.getElementById('dateInput').value = today;
-      document.getElementById('filterFromDate').value = thirtyDaysAgo;
-      document.getElementById('filterToDate').value = today;
-      document.getElementById('skatFromDate').value = thirtyDaysAgo;
-      document.getElementById('skatToDate').value = today;
-      document.getElementById('acubizFromDate').value = thirtyDaysAgo;
-      document.getElementById('acubizToDate').value = today;
-      document.getElementById('exportFromDate').value = thirtyDaysAgo;
-      document.getElementById('exportToDate').value = today;
-
-      const saved = localStorage.getItem('routeTrackerTrips');
-      if (saved) {
-        trips = JSON.parse(saved);
-      } else {
-        // Opret test-data hvis der ikke er nogen
-        console.log('Opretter test-data...');
-      }
-
-      await loadRoutes();
-      
-      // Hvis der ikke er nogen trips, opret test-data
-      if (trips.length === 0) {
-        createTestData();
-      }
-
-      updateUI();
-      updateHistoryTable();
-    });
-
-    function createTestData() {
-      const testRoutes = [
-        { id: '4640-01', postnummer: '4640', rutenummer: '01', type: 'By', startAdresse: 'Vestergade 1, Faxe', slutAdresse: 'Østrågade 50, Faxe', husstande: 240, rutelængde: 12.5, omdelertid: 180 },
-        { id: '4640-02', postnummer: '4640', rutenummer: '02', type: 'By', startAdresse: 'Nørregade 1, Faxe', slutAdresse: 'Sydgade 40, Faxe', husstande: 210, rutelængde: 11.2, omdelertid: 165 },
-        { id: '4640-03', postnummer: '4640', rutenummer: '03', type: 'Land', startAdresse: 'Bogekrattet 5, Faxe', slutAdresse: 'Voldstokken 25, Faxe', husstande: 85, rutelængde: 18.7, omdelertid: 140 }
-      ];
-
-      const today = new Date();
-      
-      // Opret test-kørsler for sidste 5 dage
-      for (let i = 0; i < 5; i++) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
-
-        const tripRoutes = testRoutes.slice(0, 2 + (i % 2));
-        trips.push({
-          id: Date.now() + i,
-          date: dateStr,
-          driverName: 'Test Chauffør',
-          routes: tripRoutes,
-          timestamp: Date.now() - (i * 86400000)
-        });
-      }
-
-      localStorage.setItem('routeTrackerTrips', JSON.stringify(trips));
-      console.log('Test-data oprettet:', trips.length, 'kørsler');
+    // Initialiser
+    function init() {
+      loadTrips();
+      loadRoutes();
+      initializeUI();
     }
 
-    async function loadRoutes() {
-      // Brug demo data - Google Sheets CSV export virker ikke længere
-      // I fremtiden kan vi bruge Google Sheets API hvis nødvendigt
-      
+    function loadRoutes() {
       routes = [
-        { id: '4640-01', postnummer: '4640', rutenummer: '01', type: 'By', startAdresse: 'Vestergade 1, Faxe', slutAdresse: 'Østrågade 50, Faxe', husstande: 240, rutelængde: 12.5, omdelertid: 180 },
-        { id: '4640-02', postnummer: '4640', rutenummer: '02', type: 'By', startAdresse: 'Nørregade 1, Faxe', slutAdresse: 'Sydgade 40, Faxe', husstande: 210, rutelængde: 11.2, omdelertid: 165 },
-        { id: '4640-03', postnummer: '4640', rutenummer: '03', type: 'Land', startAdresse: 'Bogekrattet 5, Faxe', slutAdresse: 'Voldstokken 25, Faxe', husstande: 85, rutelængde: 18.7, omdelertid: 140 },
-        { id: '4700-01', postnummer: '4700', rutenummer: '01', type: 'By', startAdresse: 'Torvet 1, Næstved', slutAdresse: 'Ringvej 100, Næstved', husstande: 320, rutelængde: 14.3, omdelertid: 200 },
-        { id: '4700-02', postnummer: '4700', rutenummer: '02', type: 'Land', startAdresse: 'Lindegårdsvej 1, Næstved', slutAdresse: 'Strandvejen 88, Næstved', husstande: 150, rutelængde: 16.5, omdelertid: 120 }
+        { id: '4640-01', startAdresse: 'Vestergade 1, Faxe', slutAdresse: 'Østrågade 50, Faxe', husstande: 240, rutelængde: 12.5, omdelertid: 180 },
+        { id: '4640-02', startAdresse: 'Nørregade 1, Faxe', slutAdresse: 'Sydgade 40, Faxe', husstande: 210, rutelængde: 11.2, omdelertid: 165 },
+        { id: '4640-03', startAdresse: 'Bogekrattet 5, Faxe', slutAdresse: 'Voldstokken 25, Faxe', husstande: 85, rutelængde: 18.7, omdelertid: 140 },
+        { id: '4700-01', startAdresse: 'Torvet 1, Næstved', slutAdresse: 'Ringvej 100, Næstved', husstande: 320, rutelængde: 14.3, omdelertid: 200 },
+        { id: '4700-02', startAdresse: 'Lindegårdsvej 1, Næstved', slutAdresse: 'Strandvejen 88, Næstved', husstande: 150, rutelængde: 16.5, omdelertid: 120 }
       ];
+      
+      const select = document.getElementById('routeSelect');
+      routes.forEach(r => {
+        const option = document.createElement('option');
+        option.value = r.id;
+        option.textContent = `${r.id} - ${r.startAdresse.split(',')[0]}`;
+        select.appendChild(option);
+      });
     }
 
-    function updateUI() {
-      const select = document.getElementById('routeSelect');
-      select.innerHTML = '<option value="">-- Vælg rute --</option>';
-      routes.forEach(r => {
-        const opt = document.createElement('option');
-        opt.value = r.id;
-        opt.textContent = `${r.id} (${r.husstande} huse, ${r.rutelængde.toFixed(1)}km)`;
-        select.appendChild(opt);
-      });
+    function initializeUI() {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('dateInput').value = today;
 
-      select.addEventListener('change', (e) => {
-        if (e.target.value && selectedRoutes.length < 6) {
-          selectedRoutes.push(e.target.value);
-          e.target.value = '';
-          updateSelectedRoutes();
-        } else if (selectedRoutes.length >= 6) {
-          alert('Max 6 ruter pr. dag');
-        }
-      });
+      document.getElementById('routeSelect').addEventListener('change', updateSelectedRoutes);
     }
 
     function updateSelectedRoutes() {
-      document.getElementById('routeCountInput').textContent = selectedRoutes.length;
-      document.getElementById('saveSection').style.display = selectedRoutes.length > 0 ? 'flex' : 'none';
-
-      const container = document.getElementById('selectedRoutesList');
+      const select = document.getElementById('routeSelect');
+      selectedRoutes = Array.from(select.selectedOptions).map(o => o.value);
+      
+      const container = document.getElementById('selectedRoutes');
       container.innerHTML = '';
 
-      if (selectedRoutes.length > 0) {
-        selectedRoutes.forEach((routeId, idx) => {
-          const route = routes.find(r => r.id === routeId);
-          const entry = document.createElement('div');
-          entry.className = 'route-entry';
-
-          let legs = '';
-          if (idx === 0) {
-            legs += `<div class="leg-info"><span class="leg-label">🏠 Hjem → Rute start</span><br><span class="leg-address">${HOME_ADDRESS} → ${route.startAdresse}</span></div>`;
-          }
-          
-          if (idx > 0) {
-            const prevRoute = routes.find(r => r.id === selectedRoutes[idx - 1]);
-            legs += `<div class="leg-info"><span class="leg-label">Rute ${idx} slut → Rute ${idx + 1} start</span><br><span class="leg-address">${prevRoute.slutAdresse} → ${route.startAdresse}</span></div>`;
-          }
-
-          entry.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: start;">
-              <div style="flex: 1;">
-                <div class="route-header"><span class="route-number">Rute ${idx + 1}</span> ${route.id} (${route.type})</div>
-                <div class="route-details">
-                  <strong>${route.startAdresse}</strong> → <strong>${route.slutAdresse}</strong><br>
-                  👥 ${route.husstande} husstande | 🛣️ ${route.rutelængde.toFixed(1)} km | ⏱️ ${formatTime(route.omdelertid)}
-                </div>
-              </div>
-              <button class="btn-danger" onclick="removeRoute(${idx})" style="margin-left: 10px;">Slet</button>
+      selectedRoutes.forEach((id, idx) => {
+        const route = routes.find(r => r.id === id);
+        const div = document.createElement('div');
+        div.className = 'card' ;
+        div.innerHTML = `
+          <div style="display: flex; justify-content: space-between;">
+            <div>
+              <strong>Rute ${idx + 1}: ${route.id}</strong><br>
+              ${route.startAdresse} → ${route.slutAdresse}<br>
+              👥 ${route.husstande} husstande | 🛣️ ${route.rutelængde} km
             </div>
-            ${legs}
-            <div style="margin-top: 10px;">
-              <label style="font-size: 0.85em; margin-bottom: 3px;">📝 Kommentar til denne rute (valgfrit):</label>
-              <textarea id="comment-${idx}" placeholder="F.eks. vejarbejde, problemer med afleveringer..." style="width: 100%; padding: 8px; border: 1px solid #d0d0d0; border-radius: 4px; font-size: 0.9em; font-family: inherit; resize: vertical; height: 60px;"></textarea>
-            </div>
-          `;
-
-          container.appendChild(entry);
-
-          if (idx === selectedRoutes.length - 1) {
-            const lastLeg = document.createElement('div');
-            lastLeg.className = 'leg-info';
-            lastLeg.innerHTML = `<span class="leg-label">🏠 Rute ${idx + 1} slut → Hjem</span><br><span class="leg-address">${route.slutAdresse} → ${HOME_ADDRESS}</span>`;
-            entry.appendChild(lastLeg);
-          }
-        });
-      }
+            <button onclick="removeRoute(${idx})" style="background: #ff4757; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer;">Slet</button>
+          </div>
+          <textarea id="comment-${idx}" placeholder="Kommentar..." style="width: 100%; margin-top: 10px; padding: 8px; border: 1px solid #d0d0d0; border-radius: 4px; height: 50px;"></textarea>
+        `;
+        container.appendChild(div);
+      });
     }
 
     function removeRoute(idx) {
@@ -433,7 +177,7 @@
       updateSelectedRoutes();
     }
 
-    function saveDailyTrip() {
+    async function saveDailyTrip() {
       const date = document.getElementById('dateInput').value;
       const driverName = document.getElementById('driverName').value || 'Ukendt';
 
@@ -446,573 +190,134 @@
 
       const tripRoutes = selectedRoutes.map((id, idx) => {
         const route = routes.find(r => r.id === id);
-        const comment = document.getElementById('comment-' + idx)?.value || '';
-        return {
-          ...route,
-          comment: comment
-        };
+        const comment = document.getElementById(`comment-${idx}`)?.value || '';
+        return { ...route, comment };
       });
 
-      // Beregn afstande fra OpenRouteService
-      calculateDistances(tripRoutes).then(routesWithDistances => {
-        const kmFromHome = routesWithDistances[0]?.kmHomeToFirst || 0;
-        const kmToHome = routesWithDistances[routesWithDistances.length - 1]?.kmLastToHome || 0;
+      // Beregn afstande
+      const kmFromHome = await getDistance(HOME_ADDRESS, tripRoutes[0].startAdresse);
+      const kmToHome = await getDistance(tripRoutes[tripRoutes.length - 1].slutAdresse, HOME_ADDRESS);
 
-        const trip = {
-          id: Date.now(),
-          date,
-          driverName,
-          routes: routesWithDistances,
-          kmFromHome,
-          kmToHome,
-          timestamp: Date.now()
-        };
+      const trip = {
+        date,
+        driverName,
+        routes: tripRoutes,
+        kmFromHome,
+        kmToHome,
+        timestamp: Date.now()
+      };
 
-        trips.push(trip);
-        localStorage.setItem('routeTrackerTrips', JSON.stringify(trips));
+      trips.push(trip);
+      saveTrips();
 
-        showNotification('✅ Kørsler gemt! (Afstand: ' + (kmFromHome + kmToHome).toFixed(1) + ' km fra/til hjem)');
-        selectedRoutes = [];
-        updateSelectedRoutes();
-        document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
-        document.getElementById('kmFromHome').value = '';
-        document.getElementById('kmToHome').value = '';
-        updateHistoryTable();
-      }).catch(err => {
-        console.error('Fejl ved afstandsberegning:', err);
-        showNotification('⚠️ Kunne ikke beregne afstande - gem alligevel');
-        
-        const trip = {
-          id: Date.now(),
-          date,
-          driverName,
-          routes: tripRoutes,
-          kmFromHome: 0,
-          kmToHome: 0,
-          timestamp: Date.now()
-        };
-
-        trips.push(trip);
-        localStorage.setItem('routeTrackerTrips', JSON.stringify(trips));
-
-        selectedRoutes = [];
-        updateSelectedRoutes();
-        document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
-        document.getElementById('kmFromHome').value = '';
-        document.getElementById('kmToHome').value = '';
-        updateHistoryTable();
-      });
-    }
-
-    async function calculateDistances(tripRoutes) {
-      if (tripRoutes.length === 0) return tripRoutes;
-
-      try {
-        console.log('Beregner afstande...');
-        
-        // Beregn fra hjem til første rute start
-        const kmHomeToFirst = await getDistance(HOME_ADDRESS, tripRoutes[0].startAdresse);
-        console.log('Km fra hjem til første:', kmHomeToFirst);
-        
-        // Beregn fra sidste rute slut til hjem
-        const kmLastToHome = await getDistance(tripRoutes[tripRoutes.length - 1].slutAdresse, HOME_ADDRESS);
-        console.log('Km fra sidste til hjem:', kmLastToHome);
-
-        // Tilføj afstandene til alle ruter
-        return tripRoutes.map(r => ({
-          ...r,
-          kmHomeToFirst: tripRoutes[0].id === r.id ? kmHomeToFirst : 0,
-          kmLastToHome: tripRoutes[tripRoutes.length - 1].id === r.id ? kmLastToHome : 0
-        }));
-      } catch (err) {
-        console.error('Fejl ved afstandsberegning:', err);
-        throw err;
-      }
+      showNotification(`✅ Gemt! Afstand: ${(kmFromHome + kmToHome).toFixed(1)} km`);
+      selectedRoutes = [];
+      updateSelectedRoutes();
+      updateHistoryTable();
     }
 
     async function getDistance(origin, destination) {
       try {
-        // Brug Google Apps Script som proxy
-        const url = `${PROXY_URL}?action=calculateDistance&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`;
-        
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
+        const url = `https://router.project-osrm.org/route/v1/driving/${encodeURIComponent(origin)};${encodeURIComponent(destination)}?overview=false`;
+        const response = await fetch(url);
         const data = await response.json();
-
-        if (data.success && data.distance) {
-          console.log(`Afstand beregnet: ${origin} → ${destination} = ${data.distance} km`);
-          return data.distance;
-        } else {
-          console.error('Proxy fejl:', data.error);
-          return 0;
+        
+        if (data.routes && data.routes[0]) {
+          const km = (data.routes[0].distance / 1000).toFixed(1);
+          console.log(`${origin} → ${destination} = ${km} km`);
+          return parseFloat(km);
         }
       } catch (err) {
-        console.error('Fejl ved afstandsberegning via proxy:', err);
-        return 0;
+        console.error('Afstandsfejl:', err);
       }
-    }
-
-    function clearRoutes() {
-      if (confirm('Slet alle valgte ruter?')) {
-        selectedRoutes = [];
-        updateSelectedRoutes();
-      }
+      return 5; // Fallback
     }
 
     function updateHistoryTable() {
-      const fromDate = document.getElementById('filterFromDate').value;
-      const toDate = document.getElementById('filterToDate').value;
-
-      const filtered = trips.filter(t => t.date >= fromDate && t.date <= toDate).sort((a, b) => new Date(b.date) - new Date(a.date));
-
-      let html = '';
-
-      filtered.forEach(trip => {
-        const totalHouses = trip.routes.reduce((s, r) => s + r.husstande, 0);
-        const totalRouteKm = trip.routes.reduce((s, r) => s + r.rutelængde, 0);
-        const totalTime = trip.routes.reduce((s, r) => s + r.omdelertid, 0);
-
-        // Beregn Skat km (fra hjem til første start + sidste slut til hjem)
-        let skatKm = 0;
-        if (trip.routes.length > 0) {
-          // Placeholder: 5 km hver vej
-          skatKm = 5 + 5;
-        }
-
-        let html2 = `<h3 style="margin-top: 20px; margin-bottom: 10px;">📅 ${formatDate(trip.date)} - ${trip.driverName}</h3>`;
-        html2 += '<div class="table-wrapper"><table>';
-        html2 += '<thead><tr><th>Rute nr</th><th>Husstande</th><th>Km</th><th>Tid</th><th>Start adresse</th><th>Slut adresse</th><th>Kommentar</th></tr></thead>';
-        html2 += '<tbody>';
-
-        trip.routes.forEach((r, i) => {
-          const comment = r.comment || '-';
-          html2 += `<tr>
-            <td><strong>${r.id}</strong></td>
-            <td>${r.husstande}</td>
-            <td>${r.rutelængde.toFixed(1)} km</td>
-            <td>${formatTime(r.omdelertid)}</td>
-            <td>${r.startAdresse}</td>
-            <td>${r.slutAdresse}</td>
-            <td style="font-style: italic; color: #666;">${comment}</td>
-          </tr>`;
-        });
-
-        html2 += '</tbody></table></div>';
-
-        // Daglig samlet opgørelse
-        html2 += '<div class="day-summary">';
-        html2 += '<h4 style="margin-bottom: 10px;">📊 Samlet Opgørelse for Dagen</h4>';
-        html2 += '<div class="summary-row"><div class="summary-label">Antal ruter:</div><div class="summary-value"><strong>' + trip.routes.length + '</strong></div></div>';
-        html2 += '<div class="summary-row"><div class="summary-label">I alt husstande:</div><div class="summary-value"><strong>' + totalHouses + '</strong></div></div>';
-        html2 += '<div class="summary-row"><div class="summary-label">I alt km (ruter):</div><div class="summary-value"><strong>' + totalRouteKm.toFixed(1) + ' km</strong></div></div>';
-        html2 += '<div class="summary-row"><div class="summary-label">I alt omdelertid:</div><div class="summary-value"><strong>' + formatTime(totalTime) + '</strong></div></div>';
-        html2 += '<div class="summary-row"><div class="summary-label">Skat befordring km:</div><div class="summary-value"><strong>' + skatKm + ' km</strong></div></div>';
-        html2 += '</div>';
-
-        html += html2;
-      });
-
+      const html = trips.map(trip => `
+        <div class="card">
+          <h3>${formatDate(trip.date)} - ${trip.driverName}</h3>
+          <table>
+            <tr><th>Rute</th><th>Start</th><th>Slut</th><th>Husstande</th><th>Kommentar</th></tr>
+            ${trip.routes.map(r => `<tr>
+              <td>${r.id}</td>
+              <td>${r.startAdresse}</td>
+              <td>${r.slutAdresse}</td>
+              <td>${r.husstande}</td>
+              <td>${r.comment || '-'}</td>
+            </tr>`).join('')}
+          </table>
+          <p style="margin-top: 10px;"><strong>Skat km fra/til hjem:</strong> ${trip.kmFromHome} + ${trip.kmToHome} = ${(trip.kmFromHome + trip.kmToHome).toFixed(1)} km</p>
+        </div>
+      `).join('');
+      
       document.getElementById('historyContent').innerHTML = html;
     }
 
-    function generateSkatReport() {
-      const fromDate = document.getElementById('skatFromDate').value;
-      const toDate = document.getElementById('skatToDate').value;
-
-      const filtered = trips.filter(t => t.date >= fromDate && t.date <= toDate).sort((a, b) => new Date(a.date) - new Date(b.date));
-
-      let html = '<h3 style="margin-bottom: 15px;">📋 Skat Befordringsfradrag Rapport</h3>';
-      html += `<p style="margin-bottom: 15px;">Period: <strong>${formatDate(fromDate)}</strong> til <strong>${formatDate(toDate)}</strong></p>`;
-
+    function updateSkatTable() {
       let totalKm = 0;
-
-      html += '<div class="table-wrapper"><table>';
-      html += '<thead><tr><th>Dato</th><th>Hjem til første start (km)</th><th>Sidste slut til hjem (km)</th><th>I alt Skat km</th></tr></thead>';
-      html += '<tbody>';
-
-      filtered.forEach(trip => {
-        if (trip.routes.length === 0) return;
-
-        const kmHomeToFirst = trip.kmFromHome || 0;
-        const kmLastToHome = trip.kmToHome || 0;
-        const totalKmDay = kmHomeToFirst + kmLastToHome;
-        totalKm += totalKmDay;
-
-        html += `<tr>
-          <td><strong>${formatDate(trip.date)}</strong></td>
-          <td>${HOME_ADDRESS} → ${trip.routes[0].startAdresse}<br><strong>${kmHomeToFirst} km</strong></td>
-          <td>${trip.routes[trip.routes.length - 1].slutAdresse} → ${HOME_ADDRESS}<br><strong>${kmLastToHome} km</strong></td>
-          <td><strong>${totalKmDay} km</strong></td>
+      const rows = trips.map(trip => {
+        const total = trip.kmFromHome + trip.kmToHome;
+        totalKm += total;
+        return `<tr>
+          <td>${formatDate(trip.date)}</td>
+          <td>${trip.kmFromHome}</td>
+          <td>${trip.kmToHome}</td>
+          <td><strong>${total}</strong></td>
         </tr>`;
-      });
+      }).join('');
 
-      html += '</tbody></table></div>';
-
-      // Samlet
-      html += '<div class="day-summary">';
-      html += '<h4 style="margin-bottom: 10px;">📊 Samlet Befordring</h4>';
-      html += '<div class="summary-row"><div class="summary-label">I alt km befordring:</div><div class="summary-value"><strong>' + totalKm + ' km</strong></div></div>';
-      html += '<div class="summary-row"><div class="summary-label">Arbejdsdage:</div><div class="summary-value"><strong>' + filtered.length + '</strong></div></div>';
-      html += '<div class="summary-row"><div class="summary-label">Gennemsnit pr. dag:</div><div class="summary-value"><strong>' + (filtered.length > 0 ? (totalKm / filtered.length).toFixed(1) : 0) + ' km</strong></div></div>';
-      html += '</div>';
-
-      document.getElementById('skatReport').innerHTML = html;
+      const html = `
+        <table>
+          <tr><th>Dato</th><th>Hjem→Første</th><th>Sidste→Hjem</th><th>I alt</th></tr>
+          ${rows}
+        </table>
+        <p style="margin-top: 20px;"><strong>Samlet Skat km: ${totalKm}</strong></p>
+      `;
+      
+      document.getElementById('skatContent').innerHTML = html;
     }
 
-    function generateAcubizReport() {
-      const fromDate = document.getElementById('acubizFromDate').value;
-      const toDate = document.getElementById('acubizToDate').value;
-
-      const filtered = trips.filter(t => t.date >= fromDate && t.date <= toDate).sort((a, b) => new Date(a.date) - new Date(b.date));
-
-      let html = '<h3 style="margin-bottom: 15px;">📊 Acubiz Tjenestekørsel Data</h3>';
-      html += `<p style="margin-bottom: 15px;">Period: <strong>${formatDate(fromDate)}</strong> til <strong>${formatDate(toDate)}</strong></p>`;
-
-      let totalEntries = 0;
-
-      html += '<div class="table-wrapper"><table>';
-      html += '<thead><tr><th>Dato</th><th>Fra Rute</th><th>Fra adresse (slutadresse)</th><th>Til Rute</th><th>Til adresse (startadresse)</th></tr></thead>';
-      html += '<tbody>';
-
-      filtered.forEach(trip => {
-        // Acubiz entries er mellem ruterne
-        for (let i = 0; i < trip.routes.length - 1; i++) {
-          const fromRoute = trip.routes[i];
-          const toRoute = trip.routes[i + 1];
-          const fromAddress = fromRoute.slutAdresse;
-          const toAddress = toRoute.startAdresse;
-          totalEntries++;
-
-          html += `<tr>
-            <td><strong>${formatDate(trip.date)}</strong></td>
-            <td><strong>${fromRoute.id}</strong></td>
-            <td>${fromAddress}</td>
-            <td><strong>${toRoute.id}</strong></td>
-            <td>${toAddress}</td>
-          </tr>`;
-        }
-      });
-
-      html += '</tbody></table></div>';
-
-      html += '<div class="day-summary">';
-      html += '<h4 style="margin-bottom: 10px;">📊 Samlet Tjenestekørsel</h4>';
-      html += '<div class="summary-row"><div class="summary-label">I alt tjenestekørsler:</div><div class="summary-value"><strong>' + totalEntries + '</strong></div></div>';
-      html += '</div>';
-
-      document.getElementById('acubizReport').innerHTML = html;
-    }
-
-    function handleExport() {
-      const format = document.getElementById('exportFormat').value;
-      const type = document.getElementById('exportType').value;
-      const fromDate = document.getElementById('exportFromDate').value;
-      const toDate = document.getElementById('exportToDate').value;
-
-      console.log('Export settings:', { format, type, fromDate, toDate });
-      console.log('Total trips:', trips.length);
-
-      if (!fromDate || !toDate) {
-        showNotification('Vælg venligst både fra-dato og til-dato');
-        return;
-      }
-
-      if (format === 'csv') {
-        if (type === 'history') downloadHistoryCSV(fromDate, toDate);
-        else if (type === 'skat') downloadSkatCSV(fromDate, toDate);
-        else if (type === 'acubiz') downloadAcubizCSV(fromDate, toDate);
-      } else if (format === 'pdf') {
-        if (type === 'history') generateHistoryPDF(fromDate, toDate);
-        else if (type === 'skat') generateSkatPDF(fromDate, toDate);
-        else if (type === 'acubiz') generateAcubizPDF(fromDate, toDate);
-      }
-    }
-
-    function showNotification(message) {
-      const notif = document.createElement('div');
-      notif.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #667eea; color: white; padding: 15px 20px; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 2000; max-width: 400px;';
-      notif.textContent = message;
-      document.body.appendChild(notif);
-      setTimeout(() => notif.remove(), 3000);
-    }
-
-    function downloadHistoryCSV(fromDate, toDate) {
-      const filtered = trips.filter(t => t.date >= fromDate && t.date <= toDate).sort((a, b) => new Date(a.date) - new Date(b.date));
-
-      if (filtered.length === 0) {
-        showNotification('Ingen data at eksportere i denne periode');
-        return;
-      }
-
-      let csv = 'Dato;Chauffør;Rute nr;Husstande;Km;Omdelertid;Start adresse;Slut adresse;Kommentar\n';
-
-      filtered.forEach(trip => {
-        trip.routes.forEach(r => {
-          const startAddr = r.startAdresse.replace(/;/g, ',');
-          const endAddr = r.slutAdresse.replace(/;/g, ',');
-          const comment = (r.comment || '').replace(/;/g, ',').replace(/\n/g, ' ');
-          csv += formatDate(trip.date) + ';' + trip.driverName + ';' + r.id + ';' + r.husstande + ';' + r.rutelængde.toFixed(1) + ';' + formatTime(r.omdelertid) + ';' + startAddr + ';' + endAddr + ';' + comment + '\n';
-        });
-
-        const totalHouses = trip.routes.reduce((s, r) => s + r.husstande, 0);
-        const totalKm = trip.routes.reduce((s, r) => s + r.rutelængde, 0);
-        const totalTime = trip.routes.reduce((s, r) => s + r.omdelertid, 0);
-        csv += formatDate(trip.date) + ';' + trip.driverName + ';SAMLET;' + totalHouses + ';' + totalKm.toFixed(1) + ';' + formatTime(totalTime) + ';;SAMLET;\n';
-      });
-
-      downloadCSVFile(csv, 'historik.csv');
-    }
-
-    function downloadSkatCSV(fromDate, toDate) {
-      const filtered = trips.filter(t => t.date >= fromDate && t.date <= toDate).sort((a, b) => new Date(a.date) - new Date(b.date));
-
-      if (filtered.length === 0) {
-        showNotification('Ingen data at eksportere i denne periode');
-        return;
-      }
-
-      let csv = 'Dato;Hjem til første start (km);Sidste slut til hjem (km);I alt Skat km\n';
-      let totalKm = 0;
-
-      filtered.forEach(trip => {
-        if (trip.routes.length === 0) return;
-        const kmHomeToFirst = trip.kmFromHome || 0;
-        const kmLastToHome = trip.kmToHome || 0;
-        const totalKmDay = kmHomeToFirst + kmLastToHome;
-        totalKm += totalKmDay;
-
-        csv += formatDate(trip.date) + ';' + kmHomeToFirst + ';' + kmLastToHome + ';' + totalKmDay + '\n';
-      });
-
-      csv += 'SAMLET;;;' + totalKm + '\n';
-
-      downloadCSVFile(csv, 'skat-befordring.csv');
-    }
-
-    function downloadAcubizCSV(fromDate, toDate) {
-      const filtered = trips.filter(t => t.date >= fromDate && t.date <= toDate).sort((a, b) => new Date(a.date) - new Date(b.date));
-
-      if (filtered.length === 0) {
-        showNotification('Ingen data at eksportere i denne periode');
-        return;
-      }
-
-      let csv = 'Dato;Fra Rute;Fra adresse;Til Rute;Til adresse\n';
-
-      filtered.forEach(trip => {
-        for (let i = 0; i < trip.routes.length - 1; i++) {
-          const fromRoute = trip.routes[i];
-          const toRoute = trip.routes[i + 1];
-          const fromAddr = fromRoute.slutAdresse.replace(/;/g, ',');
-          const toAddr = toRoute.startAdresse.replace(/;/g, ',');
-          csv += formatDate(trip.date) + ';' + fromRoute.id + ';' + fromAddr + ';' + toRoute.id + ';' + toAddr + '\n';
-        }
-      });
-
-      downloadCSVFile(csv, 'acubiz-tjenestekørsel.csv');
-    }
-
-    function downloadCSVFile(csv, filename) {
-      try {
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const element = document.createElement('a');
-        element.href = url;
-        element.download = filename;
-        element.style.display = 'none';
-        document.body.appendChild(element);
-        element.click();
-        document.body.removeChild(element);
-        URL.revokeObjectURL(url);
-        console.log('CSV downloaded:', filename);
-        showNotification('📥 ' + filename + ' downloaded!');
-      } catch (e) {
-        console.error('Download fejl:', e);
-        showNotification('❌ Fejl ved download. Prøv igen.');
-      }
-    }
-
-    function generateHistoryPDF(fromDate, toDate) {
-      const filtered = trips.filter(t => t.date >= fromDate && t.date <= toDate).sort((a, b) => new Date(a.date) - new Date(b.date));
-
-      if (filtered.length === 0) {
-        showNotification('Ingen data at eksportere i denne periode');
-        return;
-      }
-
-      let html = '<html><head><meta charset="UTF-8"><title>Rute Historik</title><style>';
-      html += 'body { font-family: Arial; margin: 20px; } h1 { color: #667eea; } table { width: 100%; border-collapse: collapse; margin-top: 20px; }';
-      html += 'th { background: #667eea; color: white; padding: 10px; text-align: left; } td { border: 1px solid #ddd; padding: 8px; }';
-      html += 'h3 { margin-top: 30px; color: #333; } .summary { background: #f0f0f0; padding: 15px; margin: 15px 0; border-radius: 4px; }';
-      html += '</style></head><body>';
-
-      html += '<h1>🚚 Rute Historik</h1>';
-      html += '<p>Period: ' + formatDate(fromDate) + ' til ' + formatDate(toDate) + '</p>';
-
-      filtered.forEach(trip => {
-        const totalHouses = trip.routes.reduce((s, r) => s + r.husstande, 0);
-        const totalRouteKm = trip.routes.reduce((s, r) => s + r.rutelængde, 0);
-        const totalTime = trip.routes.reduce((s, r) => s + r.omdelertid, 0);
-
-        html += '<h3>📅 ' + formatDate(trip.date) + ' - ' + trip.driverName + '</h3>';
-        html += '<table><thead><tr><th>Rute nr</th><th>Husstande</th><th>Km</th><th>Tid</th><th>Start adresse</th><th>Slut adresse</th></tr></thead><tbody>';
-
-        trip.routes.forEach(r => {
-          html += '<tr><td>' + r.id + '</td><td>' + r.husstande + '</td><td>' + r.rutelængde.toFixed(1) + ' km</td><td>' + formatTime(r.omdelertid) + '</td><td>' + r.startAdresse + '</td><td>' + r.slutAdresse + '</td></tr>';
-        });
-
-        html += '</tbody></table>';
-        html += '<div class="summary">';
-        html += '<strong>Samlet for dagen:</strong><br>';
-        html += 'Antal ruter: ' + trip.routes.length + '<br>';
-        html += 'I alt husstande: ' + totalHouses + '<br>';
-        html += 'I alt km (ruter): ' + totalRouteKm.toFixed(1) + ' km<br>';
-        html += 'I alt omdelertid: ' + formatTime(totalTime) + '<br>';
-        html += 'Skat befordring km: 10 km';
-        html += '</div>';
-      });
-
-      html += '</body></html>';
-
-      const element = document.createElement('a');
-      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-      element.href = URL.createObjectURL(blob);
-      element.download = 'historik_' + formatDate(new Date()).replace(/-/g, '_') + '.html';
-      document.body.appendChild(element);
-      element.click();
-      document.body.removeChild(element);
-      showNotification('📄 Historik PDF genereret!');
-    }
-
-    function generateSkatPDF(fromDate, toDate) {
-      const filtered = trips.filter(t => t.date >= fromDate && t.date <= toDate).sort((a, b) => new Date(a.date) - new Date(b.date));
-
-      if (filtered.length === 0) {
-        showNotification('Ingen data at eksportere i denne periode');
-        return;
-      }
-
-      let html = '<html><head><meta charset="UTF-8"><title>Skat Befordring</title><style>';
-      html += 'body { font-family: Arial; margin: 20px; } h1 { color: #667eea; } table { width: 100%; border-collapse: collapse; margin-top: 20px; }';
-      html += 'th { background: #667eea; color: white; padding: 10px; text-align: left; } td { border: 1px solid #ddd; padding: 8px; }';
-      html += '.summary { background: #f0f0f0; padding: 15px; margin: 20px 0; border-radius: 4px; }';
-      html += '</style></head><body>';
-
-      html += '<h1>💰 Skat Befordringsfradrag</h1>';
-      html += '<p>Period: ' + formatDate(fromDate) + ' til ' + formatDate(toDate) + '</p>';
-
-      let totalKm = 0;
-      html += '<table><thead><tr><th>Dato</th><th>Hjem → Første start (km)</th><th>Sidste slut → Hjem (km)</th><th>I alt Skat km</th></tr></thead><tbody>';
-
-      filtered.forEach(trip => {
-        if (trip.routes.length === 0) return;
-        const kmHomeToFirst = trip.kmFromHome || 0;
-        const kmLastToHome = trip.kmToHome || 0;
-        const totalKmDay = kmHomeToFirst + kmLastToHome;
-        totalKm += totalKmDay;
-
-        html += '<tr><td>' + formatDate(trip.date) + '</td><td>' + kmHomeToFirst + ' km</td><td>' + kmLastToHome + ' km</td><td>' + totalKmDay + ' km</td></tr>';
-      });
-
-      html += '</tbody></table>';
-      html += '<div class="summary">';
-      html += '<strong>Samlet befordring:</strong><br>';
-      html += 'I alt km: ' + totalKm + ' km<br>';
-      html += 'Arbejdsdage: ' + filtered.length + '<br>';
-      html += 'Gennemsnit pr. dag: ' + (filtered.length > 0 ? (totalKm / filtered.length).toFixed(1) : 0) + ' km';
-      html += '</div>';
-
-      html += '</body></html>';
-
-      const element = document.createElement('a');
-      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-      element.href = URL.createObjectURL(blob);
-      element.download = 'skat-befordring_' + formatDate(new Date()).replace(/-/g, '_') + '.html';
-      document.body.appendChild(element);
-      element.click();
-      document.body.removeChild(element);
-      showNotification('📄 Skat rapport genereret!');
-    }
-
-    function generateAcubizPDF(fromDate, toDate) {
-      const filtered = trips.filter(t => t.date >= fromDate && t.date <= toDate).sort((a, b) => new Date(a.date) - new Date(b.date));
-
-      if (filtered.length === 0) {
-        showNotification('Ingen data at eksportere i denne periode');
-        return;
-      }
-
-      let html = '<html><head><meta charset="UTF-8"><title>Acubiz Tjenestekørsel</title><style>';
-      html += 'body { font-family: Arial; margin: 20px; } h1 { color: #667eea; } table { width: 100%; border-collapse: collapse; margin-top: 20px; }';
-      html += 'th { background: #667eea; color: white; padding: 10px; text-align: left; } td { border: 1px solid #ddd; padding: 8px; }';
-      html += '.summary { background: #f0f0f0; padding: 15px; margin: 20px 0; border-radius: 4px; }';
-      html += '</style></head><body>';
-
-      html += '<h1>📊 Acubiz Tjenestekørsel</h1>';
-      html += '<p>Period: ' + formatDate(fromDate) + ' til ' + formatDate(toDate) + '</p>';
-
-      let totalEntries = 0;
-      html += '<table><thead><tr><th>Dato</th><th>Fra Rute</th><th>Fra adresse</th><th>Til Rute</th><th>Til adresse</th></tr></thead><tbody>';
-
-      filtered.forEach(trip => {
-        for (let i = 0; i < trip.routes.length - 1; i++) {
-          const fromRoute = trip.routes[i];
-          const toRoute = trip.routes[i + 1];
-          totalEntries++;
-          html += '<tr><td>' + formatDate(trip.date) + '</td><td>' + fromRoute.id + '</td><td>' + fromRoute.slutAdresse + '</td><td>' + toRoute.id + '</td><td>' + toRoute.startAdresse + '</td></tr>';
-        }
-      });
-
-      html += '</tbody></table>';
-      html += '<div class="summary">';
-      html += '<strong>I alt tjenestekørsler:</strong> ' + totalEntries;
-      html += '</div>';
-
-      html += '</body></html>';
-
-      const element = document.createElement('a');
-      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-      element.href = URL.createObjectURL(blob);
-      element.download = 'acubiz-tjenestekørsel_' + formatDate(new Date()).replace(/-/g, '_') + '.html';
-      document.body.appendChild(element);
-      element.click();
-      document.body.removeChild(element);
-      showNotification('📄 Acubiz rapport genereret!');
-    }
-
-    function formatDate(dateStr) {
-      const date = new Date(dateStr + 'T00:00:00');
-      const day = String(date.getDate()).padStart(2, '0');
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const year = date.getFullYear();
-      return `${day}-${month}-${year}`;
-    }
-
-    function formatTime(min) {
-      const h = Math.floor(min / 60);
-      const m = min % 60;
-      return `${h}t ${m}m`;
-    }
-
-    function closeModal() {
-      document.getElementById('detailsModal').classList.remove('active');
-    }
-
-    function switchTab(event, tabName) {
+    function switchTab(tab) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-      document.getElementById(tabName).classList.add('active');
+      
+      document.getElementById(tab).classList.add('active');
       event.target.classList.add('active');
+
+      if (tab === 'history') updateHistoryTable();
+      if (tab === 'skat') updateSkatTable();
     }
+
+    function clearSelection() {
+      selectedRoutes = [];
+      document.getElementById('routeSelect').value = '';
+      updateSelectedRoutes();
+    }
+
+    function showNotification(msg) {
+      const div = document.createElement('div');
+      div.className = 'notification';
+      div.textContent = msg;
+      document.body.appendChild(div);
+      setTimeout(() => div.remove(), 3000);
+    }
+
+    function formatDate(date) {
+      return new Date(date).toLocaleDateString('da-DK');
+    }
+
+    function loadTrips() {
+      const stored = localStorage.getItem('routeTrackerTrips');
+      trips = stored ? JSON.parse(stored) : [];
+    }
+
+    function saveTrips() {
+      localStorage.setItem('routeTrackerTrips', JSON.stringify(trips));
+    }
+
+    // Start
+    init();
   </script>
 </body>
 </html>
