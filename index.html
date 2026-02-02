@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🚚 Rute Tracker</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #f5f5f5; }
+    header { background: #667eea; color: white; padding: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .tabs { display: flex; gap: 10px; border-bottom: 2px solid #ddd; margin-bottom: 20px; }
+    .tab { padding: 10px 20px; cursor: pointer; background: none; border: none; font-weight: bold; color: #999; }
+    .tab.active { color: #667eea; border-bottom: 3px solid #667eea; }
+    .content { display: none; }
+    .content.active { display: block; }
+    .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    input, select, textarea { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; }
+    button { background: #667eea; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #5568d3; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+    th { background: #667eea; color: white; }
+    .notification { position: fixed; top: 20px; right: 20px; background: #667eea; color: white; padding: 15px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🚚 Rute Tracker</h1>
+    <p>Chauffør dagbog med Skat & Acubiz integration</p>
+  </header>
+
+  <div class="container">
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('input', this)">📝 Daglig Indtastning</button>
+      <button class="tab" onclick="showTab('history', this)">📅 Historik</button>
+      <button class="tab" onclick="showTab('skat', this)">💰 Skat</button>
+    </div>
+
+    <div id="input" class="content active">
+      <div class="card">
+        <h2>Registrer Dagens Kørsler</h2>
+        <input type="date" id="date">
+        <input type="text" id="driver" placeholder="Chauffør navn">
+        <label>Vælg Ruter:</label>
+        <select id="routes" multiple size="6"></select>
+        <div id="selected"></div>
+        <button onclick="save()">✅ Gem Kørsler</button>
+      </div>
+    </div>
+
+    <div id="history" class="content">
+      <div class="card" id="historyContent"></div>
+    </div>
+
+    <div id="skat" class="content">
+      <div class="card" id="skatContent"></div>
+    </div>
+  </div>
+
+  <script>
+    const HOME = 'Rosenvænget 2A, 4640 Faxe';
+    let trips = [];
+    let routes = [];
+    let selected = [];
+
+    function init() {
+      loadRoutes();
+      loadTrips();
+      document.getElementById('date').value = new Date().toISOString().split('T')[0];
+      document.getElementById('routes').addEventListener('change', updateSelected);
+    }
+
+    function loadRoutes() {
+      routes = [
+        { id: '4640-01', start: 'Vestergade 1, Faxe', end: 'Østrågade 50, Faxe', houses: 240 },
+        { id: '4640-02', start: 'Nørregade 1, Faxe', end: 'Sydgade 40, Faxe', houses: 210 },
+        { id: '4640-03', start: 'Bogekrattet 5, Faxe', end: 'Voldstokken 25, Faxe', houses: 85 },
+        { id: '4700-01', start: 'Torvet 1, Næstved', end: 'Ringvej 100, Næstved', houses: 320 },
+        { id: '4700-02', start: 'Lindegårdsvej 1, Næstved', end: 'Strandvejen 88, Næstved', houses: 150 }
+      ];
+      
+      routes.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r.id;
+        opt.text = r.id + ' - ' + r.start.split(',')[0];
+        document.getElementById('routes').appendChild(opt);
+      });
+    }
+
+    function updateSelected() {
+      selected = Array.from(document.getElementById('routes').selectedOptions).map(o => o.value);
+      const html = selected.map((id, i) => {
+        const r = routes.find(x => x.id === id);
+        return `<div class="card"><b>Rute ${i+1}: ${r.id}</b><br>${r.start} → ${r.end}<textarea id="c${i}" placeholder="Kommentar..."></textarea></div>`;
+      }).join('');
+      document.getElementById('selected').innerHTML = html;
+    }
+
+    async function save() {
+      const date = document.getElementById('date').value;
+      const driver = document.getElementById('driver').value || 'Ukendt';
+      
+      if (selected.length === 0) { notify('Vælg mindst en rute'); return; }
+
+      notify('⏳ Beregner afstande...');
+
+      const tripRoutes = selected.map((id, i) => ({
+        ...routes.find(r => r.id === id),
+        comment: document.getElementById(`c${i}`)?.value || ''
+      }));
+
+      const kmFrom = await getDistance(HOME, tripRoutes[0].start);
+      const kmTo = await getDistance(tripRoutes[tripRoutes.length - 1].end, HOME);
+
+      trips.push({ date, driver, routes: tripRoutes, kmFrom, kmTo });
+      localStorage.setItem('trips', JSON.stringify(trips));
+      
+      notify(`✅ Gemt! ${(kmFrom + kmTo).toFixed(1)} km`);
+      selected = [];
+      updateSelected();
+    }
+
+    async function getDistance(from, to) {
+      try {
+        const url = `https://router.project-osrm.org/route/v1/driving/${encodeURIComponent(from)};${encodeURIComponent(to)}?overview=false`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.routes?.[0]) {
+          const km = (data.routes[0].distance / 1000).toFixed(1);
+          console.log(`${from} → ${to} = ${km} km`);
+          return parseFloat(km);
+        }
+      } catch(e) { console.error('Afstandsfejl:', e); }
+      return 5;
+    }
+
+    function showTab(tab, btn) {
+      document.querySelectorAll('.content').forEach(e => e.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
+      document.getElementById(tab).classList.add('active');
+      btn.classList.add('active');
+      
+      if (tab === 'history') showHistory();
+      if (tab === 'skat') showSkat();
+    }
+
+    function showHistory() {
+      const html = trips.map(t => `<h3>${new Date(t.date).toLocaleDateString('da-DK')} - ${t.driver}</h3><table><tr><th>Rute</th><th>Start</th><th>Slut</th><th>Husstande</th></tr>${t.routes.map(r => `<tr><td>${r.id}</td><td>${r.start}</td><td>${r.end}</td><td>${r.houses}</td></tr>`).join('')}</table><p><b>Skat km:</b> ${t.kmFrom} + ${t.kmTo} = ${(parseFloat(t.kmFrom) + parseFloat(t.kmTo)).toFixed(1)}</p>`).join('<hr>');
+      document.getElementById('historyContent').innerHTML = html || 'Ingen kørsler';
+    }
+
+    function showSkat() {
+      let total = 0;
+      const rows = trips.map(t => {
+        const sum = parseFloat(t.kmFrom) + parseFloat(t.kmTo);
+        total += sum;
+        return `<tr><td>${new Date(t.date).toLocaleDateString('da-DK')}</td><td>${t.kmFrom}</td><td>${t.kmTo}</td><td><b>${sum.toFixed(1)}</b></td></tr>`;
+      }).join('');
+      document.getElementById('skatContent').innerHTML = `<table><tr><th>Dato</th><th>Hjem→Start</th><th>End→Hjem</th><th>I alt</th></tr>${rows}</table><p><b>Samlet: ${total.toFixed(1)} km</b></p>`;
+    }
+
+    function notify(msg) {
+      const div = document.createElement('div');
+      div.className = 'notification';
+      div.textContent = msg;
+      document.body.appendChild(div);
+      setTimeout(() => div.remove(), 3000);
+    }
+
+    function loadTrips() {
+      const stored = localStorage.getItem('trips');
+      trips = stored ? JSON.parse(stored) : [];
+    }
+
+    init();
+  </script>
+</body>
+</html>
