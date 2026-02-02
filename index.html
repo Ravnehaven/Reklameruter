@@ -17,17 +17,18 @@
     .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     input, select, textarea { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; }
     button { background: #667eea; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
-    button:hover { background: #5568d3; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    button:hover:not(:disabled) { background: #5568d3; }
     table { width: 100%; border-collapse: collapse; margin-top: 15px; }
     th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
     th { background: #667eea; color: white; }
-    .notification { position: fixed; top: 20px; right: 20px; background: #667eea; color: white; padding: 15px; border-radius: 4px; z-index: 1000; }
+    .notification { position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 15px; border-radius: 4px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
   </style>
 </head>
 <body>
   <header>
     <h1>🚚 Rute Tracker</h1>
-    <p>Chauffør dagbog med Skat & Acubiz integration</p>
+    <p>Chauffør dagbog med automatisk distanceberegning</p>
   </header>
 
   <div class="container">
@@ -40,12 +41,14 @@
     <div id="input" class="content active">
       <div class="card">
         <h2>Registrer Dagens Kørsler</h2>
+        <label>Dato:</label>
         <input type="date" id="date">
-        <input type="text" id="driver" placeholder="Chauffør navn">
-        <label>Vælg Ruter:</label>
+        <label>Chauffør:</label>
+        <input type="text" id="driver" placeholder="Indtast navn">
+        <label>Vælg ruter (hold Ctrl/Cmd nede for at vælge flere):</label>
         <select id="routes" multiple size="6"></select>
         <div id="selected"></div>
-        <button onclick="save()">✅ Gem Kørsler</button>
+        <button id="saveBtn" onclick="save()">✅ Beregn & Gem Kørsler</button>
       </div>
     </div>
 
@@ -59,10 +62,12 @@
   </div>
 
   <script>
+    // Din faste hjemmeadresse
     const HOME = 'Rosenvænget 2A, 4640 Faxe';
+    
     let trips = [];
     let routes = [];
-    let selected = [];
+    let selectedIds = [];
 
     function init() {
       loadRoutes();
@@ -72,6 +77,7 @@
     }
 
     function loadRoutes() {
+      // Dine rutedata
       routes = [
         { id: '4640-01', start: 'Vestergade 1, Faxe', end: 'Østrågade 50, Faxe', houses: 240 },
         { id: '4640-02', start: 'Nørregade 1, Faxe', end: 'Sydgade 40, Faxe', houses: 210 },
@@ -80,165 +86,97 @@
         { id: '4700-02', start: 'Lindegårdsvej 1, Næstved', end: 'Strandvejen 88, Næstved', houses: 150 }
       ];
       
+      const select = document.getElementById('routes');
       routes.forEach(r => {
         const opt = document.createElement('option');
         opt.value = r.id;
-        opt.text = r.id + ' - ' + r.start.split(',')[0];
-        document.getElementById('routes').appendChild(opt);
+        opt.text = `${r.id} (${r.houses} huse)`;
+        select.appendChild(opt);
       });
     }
 
     function updateSelected() {
-      selected = Array.from(document.getElementById('routes').selectedOptions).map(o => o.value);
-      const html = selected.map((id, i) => {
+      selectedIds = Array.from(document.getElementById('routes').selectedOptions).map(o => o.value);
+      const container = document.getElementById('selected');
+      
+      if (selectedIds.length === 0) {
+        container.innerHTML = '';
+        return;
+      }
+
+      container.innerHTML = '<p style="margin: 10px 0;"><strong>Valgt rækkefølge:</strong></p>';
+      selectedIds.forEach((id, i) => {
         const r = routes.find(x => x.id === id);
-        return `<div class="card"><b>Rute ${i+1}: ${r.id}</b><br>${r.start} → ${r.end}<textarea id="c${i}" placeholder="Kommentar..."></textarea></div>`;
-      }).join('');
-      document.getElementById('selected').innerHTML = html;
+        container.innerHTML += `
+          <div class="card" style="border-left: 5px solid #667eea; background: #f9f9f9;">
+            <b>Rute ${i+1}: ${r.id}</b><br>
+            <small>${r.start} → ${r.end}</small>
+            <textarea id="c${i}" placeholder="Evt. kommentar til denne rute..." style="margin-top:5px;"></textarea>
+          </div>`;
+      });
     }
+
+    // Funktion til at skabe kunstig pause (vigtigt for OpenStreetMap)
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
     async function save() {
       const date = document.getElementById('date').value;
       const driver = document.getElementById('driver').value || 'Ukendt';
+      const btn = document.getElementById('saveBtn');
       
-      if (selected.length === 0) { notify('Vælg mindst en rute'); return; }
+      if (selectedIds.length === 0) {
+        notify('⚠️ Vælg venligst mindst én rute.');
+        return;
+      }
 
-      notify('⏳ Beregner afstande via OpenStreetMap...');
+      btn.disabled = true;
+      btn.innerText = '⌛ Arbejder...';
 
-      const tripRoutes = selected.map((id, i) => ({
-        ...routes.find(r => r.id === id),
-        comment: document.getElementById(`c${i}`)?.value || ''
-      }));
+      try {
+        const firstRoute = routes.find(r => r.id === selectedIds[0]);
+        const lastRoute = routes.find(r => r.id === selectedIds[selectedIds.length - 1]);
 
-      // Beregn afstande med geocoding
-      const kmFrom = await getDistance(HOME, tripRoutes[0].start);
-      const kmTo = await getDistance(tripRoutes[tripRoutes.length - 1].end, HOME);
+        // 1. Beregn Hjem -> Første adresse
+        notify('🔍 Finder vej: Hjem → Første rute...');
+        const kmFrom = await getDistance(HOME, firstRoute.start);
+        
+        await sleep(1200); // Pause for at undgå blokering
 
-      trips.push({ date, driver, routes: tripRoutes, kmFrom, kmTo });
-      localStorage.setItem('trips', JSON.stringify(trips));
-      
-      notify(`✅ Gemt! ${kmFrom} + ${kmTo} = ${(parseFloat(kmFrom) + parseFloat(kmTo)).toFixed(1)} km`);
-      selected = [];
-      updateSelected();
+        // 2. Beregn Sidste adresse -> Hjem
+        notify('🔍 Finder vej: Sidste rute → Hjem...');
+        const kmTo = await getDistance(lastRoute.end, HOME);
+
+        const tripRoutes = selectedIds.map((id, i) => ({
+          ...routes.find(r => r.id === id),
+          comment: document.getElementById(`c${i}`)?.value || ''
+        }));
+
+        trips.push({ 
+          date, 
+          driver, 
+          routes: tripRoutes, 
+          kmFrom: parseFloat(kmFrom), 
+          kmTo: parseFloat(kmTo) 
+        });
+
+        localStorage.setItem('trips', JSON.stringify(trips));
+        
+        notify(`✅ Gemt! Skat-distance: ${(parseFloat(kmFrom) + parseFloat(kmTo)).toFixed(1)} km`);
+        
+        // Nulstil
+        selectedIds = [];
+        document.getElementById('routes').selectedIndex = -1;
+        updateSelected();
+      } catch (error) {
+        notify('❌ Der skete en fejl. Prøv igen.');
+        console.error(error);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = '✅ Gem Kørsler';
+      }
     }
 
     async function getDistance(from, to) {
-      try {
-        // Geocode både adressen
-        const fromCoords = await geocode(from);
-        const toCoords = await geocode(to);
-        
-        if (!fromCoords || !toCoords) {
-          console.log(`Geocoding fejlede, bruger fallback 5 km`);
-          return '5';
-        }
-
-        // Beregn distance via OSRM
-        const url = `https://router.project-osrm.org/route/v1/driving/${fromCoords};${toCoords}?overview=false`;
-        const res = await fetch(url);
-        const data = await res.json();
-        
-        if (data.routes && data.routes[0]) {
-          const km = (data.routes[0].distance / 1000).toFixed(1);
-          console.log(`✓ ${from} → ${to} = ${km} km`);
-          return km;
-        } else {
-          console.log(`OSRM fejl for ${from} → ${to}, bruger fallback`);
-          return '5';
-        }
-      } catch(e) { 
-        console.error('Afstandsfejl:', e);
-        return '5';
-      }
-    }
-
-    async function geocode(address) {
-      try {
-        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1&countrycodes=dk`;
-        const res = await fetch(url);
-        const data = await res.json();
-        
-        if (data && data[0]) {
-          const lon = data[0].lon;
-          const lat = data[0].lat;
-          const coords = `${lon},${lat}`;
-          console.log(`Geocoded: "${address}" → ${coords}`);
-          return coords;
-        } else {
-          console.log(`Geocoding fejlede for: "${address}"`);
-          return null;
-        }
-      } catch(e) {
-        console.error('Geocoding fejl:', e);
-        return null;
-      }
-    }
-
-    function showTab(tab, btn) {
-      document.querySelectorAll('.content').forEach(e => e.classList.remove('active'));
-      document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
-      document.getElementById(tab).classList.add('active');
-      btn.classList.add('active');
-      
-      if (tab === 'history') showHistory();
-      if (tab === 'skat') showSkat();
-    }
-
-    function showHistory() {
-      if (trips.length === 0) {
-        document.getElementById('historyContent').innerHTML = 'Ingen kørsler registreret';
-        return;
-      }
-
-      const html = trips.map(t => `
-        <h3>${new Date(t.date).toLocaleDateString('da-DK')} - ${t.driver}</h3>
-        <table>
-          <tr><th>Rute</th><th>Start</th><th>Slut</th><th>Husstande</th><th>Kommentar</th></tr>
-          ${t.routes.map(r => `<tr><td>${r.id}</td><td>${r.start}</td><td>${r.end}</td><td>${r.houses}</td><td>${r.comment || '-'}</td></tr>`).join('')}
-        </table>
-        <p style="margin-top: 10px;"><b>Skat km:</b> ${t.kmFrom} + ${t.kmTo} = ${(parseFloat(t.kmFrom) + parseFloat(t.kmTo)).toFixed(1)} km</p>
-        <hr style="margin: 20px 0;">
-      `).join('');
-
-      document.getElementById('historyContent').innerHTML = html;
-    }
-
-    function showSkat() {
-      if (trips.length === 0) {
-        document.getElementById('skatContent').innerHTML = 'Ingen kørsler registreret';
-        return;
-      }
-
-      let total = 0;
-      const rows = trips.map(t => {
-        const sum = parseFloat(t.kmFrom) + parseFloat(t.kmTo);
-        total += sum;
-        return `<tr><td>${new Date(t.date).toLocaleDateString('da-DK')}</td><td>${t.kmFrom}</td><td>${t.kmTo}</td><td><b>${sum.toFixed(1)}</b></td></tr>`;
-      }).join('');
-
-      document.getElementById('skatContent').innerHTML = `
-        <table>
-          <tr><th>Dato</th><th>Hjem→Start</th><th>End→Hjem</th><th>I alt</th></tr>
-          ${rows}
-        </table>
-        <p style="margin-top: 20px;"><b>Samlet Skat km: ${total.toFixed(1)} km</b></p>
-      `;
-    }
-
-    function notify(msg) {
-      const div = document.createElement('div');
-      div.className = 'notification';
-      div.textContent = msg;
-      document.body.appendChild(div);
-      setTimeout(() => div.remove(), 4000);
-    }
-
-    function loadTrips() {
-      const stored = localStorage.getItem('trips');
-      trips = stored ? JSON.parse(stored) : [];
-    }
-
-    init();
-  </script>
-</body>
-</html>
+      const fromCoords = await geocode(from);
+      await sleep(1100);
+      const toCoords = await geocode(to);
