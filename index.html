@@ -1,182 +1,154 @@
-<!DOCTYPE html>
-<html lang="da">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🚚 Rute Tracker</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; background: #f5f5f5; }
-    header { background: #667eea; color: white; padding: 20px; }
-    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-    .tabs { display: flex; gap: 10px; border-bottom: 2px solid #ddd; margin-bottom: 20px; }
-    .tab { padding: 10px 20px; cursor: pointer; background: none; border: none; font-weight: bold; color: #999; }
-    .tab.active { color: #667eea; border-bottom: 3px solid #667eea; }
-    .content { display: none; }
-    .content.active { display: block; }
-    .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    input, select, textarea { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; }
-    button { background: #667eea; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
-    button:disabled { background: #ccc; cursor: not-allowed; }
-    button:hover:not(:disabled) { background: #5568d3; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-    th { background: #667eea; color: white; }
-    .notification { position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 15px; border-radius: 4px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-  </style>
-</head>
-<body>
-  <header>
-    <h1>🚚 Rute Tracker</h1>
-    <p>Chauffør dagbog med automatisk distanceberegning</p>
-  </header>
+// Kopier denne kode til Google Apps Script
+// 1. Gå til https://script.google.com
+// 2. Klik Tools → Script editor
+// 3. Paste denne kode
+// 4. Klik Deploy → New deployment → Web app
+// 5. Execute as: Me, Who has access: Anyone
+// 6. Kopier URL'en med /exec og sæt den i route-tracker.html under PROXY_URL
 
-  <div class="container">
-    <div class="tabs">
-      <button class="tab active" onclick="showTab('input', this)">📝 Daglig Indtastning</button>
-      <button class="tab" onclick="showTab('history', this)">📅 Historik</button>
-      <button class="tab" onclick="showTab('skat', this)">💰 Skat</button>
-    </div>
+const GOOGLE_MAPS_API_KEY = 'AIzaSyBC3gj0G0PSbLL98bCRvt-MiuUZPck0A6Y';
+const SHEET_ID = '1XBDnloUNP6PNmAxyxcytCYoQYv2rGXGpxct6H5tjHa8';
 
-    <div id="input" class="content active">
-      <div class="card">
-        <h2>Registrer Dagens Kørsler</h2>
-        <label>Dato:</label>
-        <input type="date" id="date">
-        <label>Chauffør:</label>
-        <input type="text" id="driver" placeholder="Indtast navn">
-        <label>Vælg ruter (hold Ctrl/Cmd nede for at vælge flere):</label>
-        <select id="routes" multiple size="6"></select>
-        <div id="selected"></div>
-        <button id="saveBtn" onclick="save()">✅ Beregn & Gem Kørsler</button>
-      </div>
-    </div>
+function doGet(e) {
+  return handleRequest(e);
+}
 
-    <div id="history" class="content">
-      <div class="card" id="historyContent"></div>
-    </div>
+function doPost(e) {
+  return handleRequest(e);
+}
 
-    <div id="skat" class="content">
-      <div class="card" id="skatContent"></div>
-    </div>
-  </div>
-
-  <script>
-    // Din faste hjemmeadresse
-    const HOME = 'Rosenvænget 2A, 4640 Faxe';
+function handleRequest(e) {
+  const action = e.parameter.action;
+  
+  try {
+    let responseData = {};
     
-    let trips = [];
-    let routes = [];
-    let selectedIds = [];
-
-    function init() {
-      loadRoutes();
-      loadTrips();
-      document.getElementById('date').value = new Date().toISOString().split('T')[0];
-      document.getElementById('routes').addEventListener('change', updateSelected);
+    if (action === 'calculateDistance') {
+      const origin = e.parameter.origin;
+      const destination = e.parameter.destination;
+      const distance = calculateDistance(origin, destination);
+      responseData = { success: true, distance: distance };
     }
-
-    function loadRoutes() {
-      // Dine rutedata
-      routes = [
-        { id: '4640-01', start: 'Vestergade 1, Faxe', end: 'Østrågade 50, Faxe', houses: 240 },
-        { id: '4640-02', start: 'Nørregade 1, Faxe', end: 'Sydgade 40, Faxe', houses: 210 },
-        { id: '4640-03', start: 'Bogekrattet 5, Faxe', end: 'Voldstokken 25, Faxe', houses: 85 },
-        { id: '4700-01', start: 'Torvet 1, Næstved', end: 'Ringvej 100, Næstved', houses: 320 },
-        { id: '4700-02', start: 'Lindegårdsvej 1, Næstved', end: 'Strandvejen 88, Næstved', houses: 150 }
-      ];
-      
-      const select = document.getElementById('routes');
-      routes.forEach(r => {
-        const opt = document.createElement('option');
-        opt.value = r.id;
-        opt.text = `${r.id} (${r.houses} huse)`;
-        select.appendChild(opt);
-      });
+    else if (action === 'getRoutes') {
+      const routes = getRoutesFromSheet();
+      responseData = { success: true, routes: routes };
     }
-
-    function updateSelected() {
-      selectedIds = Array.from(document.getElementById('routes').selectedOptions).map(o => o.value);
-      const container = document.getElementById('selected');
-      
-      if (selectedIds.length === 0) {
-        container.innerHTML = '';
-        return;
-      }
-
-      container.innerHTML = '<p style="margin: 10px 0;"><strong>Valgt rækkefølge:</strong></p>';
-      selectedIds.forEach((id, i) => {
-        const r = routes.find(x => x.id === id);
-        container.innerHTML += `
-          <div class="card" style="border-left: 5px solid #667eea; background: #f9f9f9;">
-            <b>Rute ${i+1}: ${r.id}</b><br>
-            <small>${r.start} → ${r.end}</small>
-            <textarea id="c${i}" placeholder="Evt. kommentar til denne rute..." style="margin-top:5px;"></textarea>
-          </div>`;
-      });
+    else if (action === 'uploadTrip') {
+      const tripData = JSON.parse(e.postData.contents);
+      const result = uploadTripToSheet(tripData);
+      responseData = { success: true, message: 'Trip uploaded', result: result };
     }
+    else {
+      responseData = { success: false, error: 'Unknown action' };
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify(responseData))
+      .setMimeType(ContentService.MimeType.JSON)
+      .addHeader('Access-Control-Allow-Origin', '*')
+      .addHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+      .addHeader('Access-Control-Allow-Headers', 'Content-Type');
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({ 
+      success: false, 
+      error: error.toString() 
+    }))
+    .setMimeType(ContentService.MimeType.JSON)
+    .addHeader('Access-Control-Allow-Origin', '*')
+    .addHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    .addHeader('Access-Control-Allow-Headers', 'Content-Type');
+  }
+}
 
-    // Funktion til at skabe kunstig pause (vigtigt for OpenStreetMap)
-    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-    async function save() {
-      const date = document.getElementById('date').value;
-      const driver = document.getElementById('driver').value || 'Ukendt';
-      const btn = document.getElementById('saveBtn');
-      
-      if (selectedIds.length === 0) {
-        notify('⚠️ Vælg venligst mindst én rute.');
-        return;
-      }
-
-      btn.disabled = true;
-      btn.innerText = '⌛ Arbejder...';
-
-      try {
-        const firstRoute = routes.find(r => r.id === selectedIds[0]);
-        const lastRoute = routes.find(r => r.id === selectedIds[selectedIds.length - 1]);
-
-        // 1. Beregn Hjem -> Første adresse
-        notify('🔍 Finder vej: Hjem → Første rute...');
-        const kmFrom = await getDistance(HOME, firstRoute.start);
-        
-        await sleep(1200); // Pause for at undgå blokering
-
-        // 2. Beregn Sidste adresse -> Hjem
-        notify('🔍 Finder vej: Sidste rute → Hjem...');
-        const kmTo = await getDistance(lastRoute.end, HOME);
-
-        const tripRoutes = selectedIds.map((id, i) => ({
-          ...routes.find(r => r.id === id),
-          comment: document.getElementById(`c${i}`)?.value || ''
-        }));
-
-        trips.push({ 
-          date, 
-          driver, 
-          routes: tripRoutes, 
-          kmFrom: parseFloat(kmFrom), 
-          kmTo: parseFloat(kmTo) 
+function getRoutesFromSheet() {
+  try {
+    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheets()[0];
+    const data = sheet.getDataRange().getValues();
+    
+    const routes = [];
+    // Kolonner: 0=Rutenr, 1=Husstande, 2=Km, 3=Omdelertid, 4=Start, 5=Slut
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] && data[i][4] && data[i][5]) { // Rutenr, Start, Slut må ikke være tomme
+        routes.push({
+          id: data[i][0],           // Rutenummer (f.eks. "4640-01")
+          houses: parseInt(data[i][1]) || 0,  // Antal husstande
+          km: parseFloat(data[i][2]) || 0,    // Rute km
+          time: parseInt(data[i][3]) || 0,    // Omdelertid (minutter)
+          start: data[i][4] || '',  // Start adresse
+          end: data[i][5] || ''     // Slut adresse
         });
-
-        localStorage.setItem('trips', JSON.stringify(trips));
-        
-        notify(`✅ Gemt! Skat-distance: ${(parseFloat(kmFrom) + parseFloat(kmTo)).toFixed(1)} km`);
-        
-        // Nulstil
-        selectedIds = [];
-        document.getElementById('routes').selectedIndex = -1;
-        updateSelected();
-      } catch (error) {
-        notify('❌ Der skete en fejl. Prøv igen.');
-        console.error(error);
-      } finally {
-        btn.disabled = false;
-        btn.innerText = '✅ Gem Kørsler';
       }
     }
+    
+    Logger.log('Routes loaded: ' + routes.length);
+    return routes;
+  } catch (error) {
+    Logger.log('Error loading routes: ' + error);
+    return [];
+  }
+}
 
-    async function getDistance(from, to) {
-      const fromCoords = await geocode(from);
-      await sleep(1100);
-      const toCoords = await geocode(to);
+function calculateDistance(origin, destination) {
+  try {
+    const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(origin)}&destinations=${encodeURIComponent(destination)}&key=${GOOGLE_MAPS_API_KEY}&mode=driving&language=da`;
+    
+    const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    const result = JSON.parse(response.getContentText());
+    
+    if (result.status === 'OK' && result.rows[0].elements[0].status === 'OK') {
+      const distanceMeters = result.rows[0].elements[0].distance.value;
+      const distanceKm = (distanceMeters / 1000).toFixed(1);
+      Logger.log(`Distance calculated: ${origin} → ${destination} = ${distanceKm} km`);
+      return parseFloat(distanceKm);
+    } else {
+      Logger.log('Google Maps error: ' + result.status);
+      return 0;
+    }
+  } catch (error) {
+    Logger.log('Error calculating distance: ' + error);
+    return 0;
+  }
+}
+
+function uploadTripToSheet(tripData) {
+  try {
+    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('Kørsler') || 
+                  SpreadsheetApp.openById(SHEET_ID).insertSheet('Kørsler');
+    
+    // Tilføj header hvis tom
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(['Dato', 'Chauffør', 'Rute 1', 'Rute 2', 'Rute 3', 'Rute 4', 'Rute 5', 'Rute 6', 
+                       'I alt husstande', 'I alt km', 'I alt tid', 'Skat km fra', 'Skat km til', 'Kommentar']);
+    }
+    
+    // Forbered rute-data
+    const routeIds = tripData.routes.map(r => r.id).slice(0, 6);
+    while (routeIds.length < 6) {
+      routeIds.push('');
+    }
+    
+    const totalHouses = tripData.routes.reduce((s, r) => s + (r.husstande || 0), 0);
+    const totalKm = tripData.routes.reduce((s, r) => s + (r.rutelængde || 0), 0);
+    const totalTime = tripData.routes.reduce((s, r) => s + (r.omdelertid || 0), 0);
+    
+    const comment = tripData.routes.map((r, i) => `Rute ${i + 1}: ${r.comment || ''}`).filter(c => c.includes(':')).join('; ');
+    
+    // Tilføj række
+    sheet.appendRow([
+      tripData.date,
+      tripData.driverName,
+      ...routeIds,
+      totalHouses,
+      totalKm.toFixed(1),
+      totalTime,
+      tripData.kmFromHome || 0,
+      tripData.kmToHome || 0,
+      comment
+    ]);
+    
+    Logger.log('Trip uploaded successfully');
+    return { rows: sheet.getLastRow() };
+  } catch (error) {
+    Logger.log('Error uploading to sheet: ' + error);
+    throw error;
+  }
+}
