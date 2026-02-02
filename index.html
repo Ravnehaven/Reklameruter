@@ -3,319 +3,141 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🚚 Rute Tracker</title>
+  <title>Rute Tracker</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; background: #f5f5f5; color: #333; }
+    body { font-family: sans-serif; background: #f5f5f5; color: #333; }
     header { background: #667eea; color: white; padding: 20px; text-align: center; }
-    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
     .tabs { display: flex; gap: 10px; border-bottom: 2px solid #ddd; margin-bottom: 20px; }
     .tab { padding: 10px 20px; cursor: pointer; background: none; border: none; font-weight: bold; color: #999; }
     .tab.active { color: #667eea; border-bottom: 3px solid #667eea; }
     .content { display: none; }
     .content.active { display: block; }
     .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    h2 { margin-bottom: 15px; font-size: 1.2rem; color: #444; }
-    label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; }
-    input, select, textarea { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; }
+    input, select, textarea { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; }
     button { background: #667eea; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
-    button:disabled { background: #ccc; cursor: not-allowed; }
-    button:hover:not(:disabled) { background: #5568d3; }
-    .secondary-btn { background: #f0f0f0; color: #333; margin-top: 5px; }
-    .secondary-btn:hover { background: #e0e0e0; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; }
-    th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-    th { background: #667eea; color: white; }
-    .notification { position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 15px 25px; border-radius: 5px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-    .route-item { border-left: 4px solid #667eea; padding-left: 15px; margin-bottom: 10px; background: #f9f9f9; padding: 10px; border-radius: 0 4px 4px 0; }
+    button:disabled { background: #ccc; }
+    .notification { position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 15px; border-radius: 5px; z-index: 1000; }
   </style>
 </head>
 <body>
 
-  <header>
-    <h1>🚚 Rute Tracker</h1>
-    <p>Chauffør dagbog & Skat beregner</p>
-  </header>
+<header>
+  <h1>🚚 Rute Tracker</h1>
+</header>
 
-  <div class="container">
-    <div class="tabs">
-      <button class="tab active" onclick="showTab('input', this)">📝 Indtastning</button>
-      <button class="tab" onclick="showTab('history', this)">📅 Historik</button>
-      <button class="tab" onclick="showTab('settings', this)">⚙️ Opsætning</button>
-    </div>
+<div class="container">
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('input', this)">Indtastning</button>
+    <button class="tab" onclick="showTab('history', this)">Historik</button>
+    <button class="tab" onclick="showTab('settings', this)">Opsætning</button>
+  </div>
 
-    <div id="input" class="content active">
-      <div class="card">
-        <h2>Registrer Kørsler</h2>
-        <label>Dato:</label>
-        <input type="date" id="date">
-        
-        <label>Chauffør:</label>
-        <input type="text" id="driver" placeholder="Navn på chauffør">
-        
-        <label>Vælg ruter (hold Ctrl/Cmd nede for flere):</label>
-        <select id="routes" multiple size="8"></select>
-        
-        <div id="selectedContainer"></div>
-        
-        <button id="saveBtn" onclick="save()">✅ Beregn Afstand & Gem</button>
-      </div>
-    </div>
-
-    <div id="history" class="content">
-      <div class="card">
-        <h2>Samlet Oversigt (Skat)</h2>
-        <div id="skatSummary"></div>
-      </div>
-      <div class="card">
-        <h2>Detaljeret Historik</h2>
-        <div id="historyContent"></div>
-      </div>
-    </div>
-
-    <div id="settings" class="content">
-      <div class="card">
-        <h2>Forbind til Google Sheets</h2>
-        <p style="font-size: 0.85rem; margin-bottom: 15px; color: #666;">
-          1. Gå til dit ark -> Filer -> Del -> Udgiv på nettet.<br>
-          2. Vælg "Hele dokumentet" og "Kommaseparerede værdier (.csv)".<br>
-          3. Kopier linket og indsæt det herunder.
-        </p>
-        <label>Google Sheets CSV URL:</label>
-        <input type="text" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv">
-        <button onclick="importSheet()">📥 Hent Rutedata Nu</button>
-        <button class="secondary-btn" onclick="clearData()">🗑️ Slet alt historik</button>
-      </div>
+  <div id="input" class="content active">
+    <div class="card">
+      <input type="date" id="date">
+      <input type="text" id="driver" placeholder="Chauffør navn">
+      <select id="routes" multiple size="8"></select>
+      <div id="selectedContainer"></div>
+      <button id="saveBtn" onclick="save()">Gem kørsel</button>
     </div>
   </div>
 
-  <script>
-    // Din faste hjemmeadresse
-    const HOME = 'Rosenvænget 2A, 4640 Faxe';
+  <div id="history" class="content">
+    <div class="card" id="historyContent"></div>
+  </div>
+
+  <div id="settings" class="content">
+    <div class="card">
+      <label>Google Sheets CSV URL:</label>
+      <input type="text" id="sheetUrl" placeholder="Indsæt link her...">
+      <button onclick="importSheet()">Opdater ruter</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const HOME = 'Rosenvænget 2A, 4640 Faxe';
+  let trips = [], routes = [], selectedIds = [];
+
+  function init() {
+    document.getElementById('date').value = new Date().toISOString().split('T')[0];
+    const t = localStorage.getItem('trips'), r = localStorage.getItem('savedRoutes');
+    if (t) trips = JSON.parse(t);
+    if (r) { routes = JSON.parse(r); renderSelect(); }
+  }
+
+  async function importSheet() {
+    let url = document.getElementById('sheetUrl').value.trim();
+    if (url.includes('/edit')) url = url.replace(/\/edit.*$/, '/export?format=csv');
+    try {
+      const res = await fetch(url);
+      const text = await res.text();
+      const rows = text.split('\n').filter(l => l.trim() !== "");
+      routes = rows.slice(1).map(row => {
+        const c = row.includes(';') ? row.split(';') : row.split(',');
+        return { id: c[0]?.trim(), start: c[1]?.trim(), end: c[2]?.trim() };
+      }).filter(r => r.id);
+      localStorage.setItem('savedRoutes', JSON.stringify(routes));
+      renderSelect();
+      alert('Ruter opdateret!');
+    } catch (e) { alert('Fejl ved hentning af ark'); }
+  }
+
+  function renderSelect() {
+    const s = document.getElementById('routes');
+    s.innerHTML = '';
+    routes.forEach(r => {
+      const o = document.createElement('option');
+      o.value = r.id; o.text = r.id; s.appendChild(o);
+    });
+  }
+
+  async function save() {
+    const s = document.getElementById('routes');
+    selectedIds = Array.from(s.selectedOptions).map(o => o.value);
+    if (!selectedIds.length) return alert('Vælg rute');
+    const b = document.getElementById('saveBtn');
+    b.disabled = true; b.innerText = 'Beregner...';
     
-    let trips = [];
-    let routes = [];
-    let selectedIds = [];
+    const first = routes.find(r => r.id === selectedIds[0]);
+    const last = routes.find(r => r.id === selectedIds[selectedIds.length-1]);
+    
+    const k1 = await getDist(HOME, first.start);
+    await new Promise(r => setTimeout(r, 1200));
+    const k2 = await getDist(last.end, HOME);
+    
+    trips.push({ date: document.getElementById('date').value, km: parseFloat(k1)+parseFloat(k2) });
+    localStorage.setItem('trips', JSON.stringify(trips));
+    alert('Gemt!');
+    b.disabled = false; b.innerText = 'Gem kørsel';
+  }
 
-    // Start programmet
-    function init() {
-      document.getElementById('date').value = new Date().toISOString().split('T')[0];
-      loadFromStorage();
-      renderRouteSelect();
-      document.getElementById('routes').addEventListener('change', updateSelectedUI);
-      
-      // Hent URL hvis den er gemt
-      const savedUrl = localStorage.getItem('sheetUrl');
-      if (savedUrl) document.getElementById('sheetUrl').value = savedUrl;
+  async function getDist(f, t) {
+    const fC = await geo(f); await new Promise(r => setTimeout(r, 1100));
+    const tC = await geo(t);
+    if(!fC || !tC) return 5;
+    const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${fC};${tC}?overview=false`);
+    const d = await res.json();
+    return d.routes ? (d.routes[0].distance/1000).toFixed(1) : 5;
+  }
+
+  async function geo(a) {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(a)}&format=json&limit=1&countrycodes=dk`);
+    const d = await res.json();
+    return d[0] ? `${d[0].lon},${d[0].lat}` : null;
+  }
+
+  function showTab(id, b) {
+    document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if(id === 'history') {
+      document.getElementById('historyContent').innerHTML = trips.map(t => `<p>${t.date}: ${t.km} km</p>`).join('');
     }
+  }
 
-    // Hent ruter fra Google Sheets
-    async function importSheet() {
-      const url = document.getElementById('sheetUrl').value.trim();
-      if (!url) { notify('⚠️ Indsæt venligst en URL'); return; }
-
-      // Sikr at linket peger på CSV eksport
-      let csvUrl = url;
-      if (url.includes('/edit')) {
-        csvUrl = url.replace(/\/edit.*$/, '/export?format=csv');
-      }
-
-      try {
-        notify('⏳ Henter data fra arket...');
-        const response = await fetch(csvUrl);
-        const text = await response.text();
-        
-        // Parse CSV (ID, Startadresse, Slutadresse, Huse)
-        const rows = text.split('\n').filter(line => line.trim() !== "");
-        const newRoutes = rows.slice(1).map(row => {
-          // Håndterer hvis folk bruger semikolon eller komma
-          const cols = row.includes(';') ? row.split(';') : row.split(',');
-          return {
-            id: cols[0]?.trim(),
-            start: cols[1]?.trim(),
-            end: cols[2]?.trim(),
-            houses: cols[3]?.trim() || '0'
-          };
-        }).filter(r => r.id && r.start);
-
-        if (newRoutes.length === 0) throw new Error("Ingen data fundet");
-
-        routes = newRoutes;
-        localStorage.setItem('savedRoutes', JSON.stringify(routes));
-        localStorage.setItem('sheetUrl', url);
-        
-        renderRouteSelect();
-        notify(`✅ ${routes.length} ruter blev opdateret!`);
-      } catch (err) {
-        notify('❌ Fejl: Tjek om arket er "Udgivet på nettet" som CSV');
-        console.error(err);
-      }
-    }
-
-    function renderRouteSelect() {
-      const select = document.getElementById('routes');
-      select.innerHTML = '';
-      routes.forEach(r => {
-        const opt = document.createElement('option');
-        opt.value = r.id;
-        opt.text = `${r.id} (${r.start.split(',')[0]}...)`;
-        select.appendChild(opt);
-      });
-    }
-
-    function updateSelectedUI() {
-      selectedIds = Array.from(document.getElementById('routes').selectedOptions).map(o => o.value);
-      const container = document.getElementById('selectedContainer');
-      container.innerHTML = selectedIds.length > 0 ? '<p><b>Valgt rækkefølge:</b></p>' : '';
-      
-      selectedIds.forEach((id, i) => {
-        const r = routes.find(x => x.id === id);
-        container.innerHTML += `
-          <div class="route-item">
-            <strong>${i+1}. ${r.id}</strong><br>
-            <small>${r.start} → ${r.end}</small>
-            <textarea id="comm-${i}" placeholder="Bemærkning til ruten..." style="height:40px; margin-top:5px;"></textarea>
-          </div>`;
-      });
-    }
-
-    const sleep = (ms) => new Promise(res => setTimeout(res, ms));
-
-    async function save() {
-      const date = document.getElementById('date').value;
-      const driver = document.getElementById('driver').value || 'Ukendt';
-      const btn = document.getElementById('saveBtn');
-
-      if (selectedIds.length === 0) { notify('⚠️ Vælg mindst én rute'); return; }
-
-      btn.disabled = true;
-      btn.innerText = '⌛ Beregner afstande...';
-
-      try {
-        const first = routes.find(r => r.id === selectedIds[0]);
-        const last = routes.find(r => r.id === selectedIds[selectedIds.length - 1]);
-
-        notify('🔍 Beregner: Hjem → Start');
-        const kmFrom = await getDistance(HOME, first.start);
-        
-        await sleep(1200); // Overhold OSM regler (max 1 kald pr sek)
-        
-        notify('🔍 Beregner: Slut → Hjem');
-        const kmTo = await getDistance(last.end, HOME);
-
-        const tripData = {
-          date,
-          driver,
-          kmFrom: parseFloat(kmFrom),
-          kmTo: parseFloat(kmTo),
-          selectedRoutes: selectedIds.map((id, i) => ({
-            id,
-            comment: document.getElementById(`comm-${i}`).value
-          }))
-        };
-
-        trips.push(tripData);
-        localStorage.setItem('trips', JSON.stringify(trips));
-        
-        notify(`✅ Gemt! Total: ${(tripData.kmFrom + tripData.kmTo).toFixed(1)} km`);
-        
-        // Reset
-        document.getElementById('routes').selectedIndex = -1;
-        updateSelectedUI();
-      } catch (e) {
-        notify('❌ Fejl ved beregning. Prøv igen.');
-      } finally {
-        btn.disabled = false;
-        btn.innerText = '✅ Beregn Afstand & Gem';
-      }
-    }
-
-    async function getDistance(from, to) {
-      const fCoord = await geocode(from);
-      await sleep(1100);
-      const tCoord = await geocode(to);
-      
-      if (!fCoord || !tCoord) return 5.0; // Fallback hvis adresse ikke findes
-
-      try {
-        const url = `https://router.project-osrm.org/route/v1/driving/${fCoord};${tCoord}?overview=false`;
-        const res = await fetch(url);
-        const d = await res.json();
-        return d.routes ? (d.routes[0].distance / 1000).toFixed(1) : 5.0;
-      } catch(e) { return 5.0; }
-    }
-
-    async function geocode(addr) {
-      try {
-        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addr)}&format=json&limit=1&countrycodes=dk`;
-        const res = await fetch(url, { headers: { 'X-Requested-With': 'RuteTracker' } });
-        const data = await res.json();
-        return data[0] ? `${data[0].lon},${data[0].lat}` : null;
-      } catch(e) { return null; }
-    }
-
-    function showTab(id, btn) {
-      document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-      btn.classList.add('active');
-      if (id === 'history') renderHistory();
-    }
-
-    function renderHistory() {
-      const hist = document.getElementById('historyContent');
-      const skat = document.getElementById('skatSummary');
-      
-      if (trips.length === 0) {
-        hist.innerHTML = 'Ingen data gemt endnu.';
-        skat.innerHTML = '0 km';
-        return;
-      }
-
-      let totalKm = 0;
-      
-      // Sorter efter dato
-      trips.sort((a,b) => new Date(b.date) - new Date(a.date));
-
-      hist.innerHTML = trips.map(t => {
-        const dagstotal = t.kmFrom + t.kmTo;
-        totalKm += dagstotal;
-        return `
-          <div style="border-bottom: 1px solid #eee; padding: 10px 0;">
-            <strong>${new Date(t.date).toLocaleDateString('da-DK')}</strong> - ${t.driver}<br>
-            <small>Ruter: ${t.selectedRoutes.map(r => r.id).join(', ')}</small><br>
-            <span>Tur/Retur: ${t.kmFrom} + ${t.kmTo} = <b>${dagstotal.toFixed(1)} km</b></span>
-          </div>`;
-      }).join('');
-
-      skat.innerHTML = `<h3>Total: ${totalKm.toFixed(1)} km</h3>`;
-    }
-
-    function notify(msg) {
-      const n = document.createElement('div');
-      n.className = 'notification';
-      n.innerText = msg;
-      document.body.appendChild(n);
-      setTimeout(() => n.remove(), 4000);
-    }
-
-    function loadFromStorage() {
-      const t = localStorage.getItem('trips');
-      const r = localStorage.getItem('savedRoutes');
-      if (t) trips = JSON.parse(t);
-      if (r) routes = JSON.parse(r);
-    }
-
-    function clearData() {
-      if (confirm('Er du sikker på du vil slette ALL historik?')) {
-        localStorage.removeItem('trips');
-        trips = [];
-        renderHistory();
-        notify('🗑️ Alt historik er slettet.');
-      }
-    }
-
-    init();
-  </script>
+  init();
+</script>
 </body>
 </html>
