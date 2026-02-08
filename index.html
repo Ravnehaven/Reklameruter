@@ -3,134 +3,210 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rute Tracker - 4640 Edition</title>
+  <title>Rute Tracker Pro - 4640 Edition</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
   <style>
-    * { box-sizing: border-box; font-family: sans-serif; }
-    body { background: #f0f4f8; padding: 15px; color: #333; line-height: 1.4; }
-    .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); max-width: 500px; margin: 0 auto 15px; }
-    h2 { margin-top: 0; color: #667eea; font-size: 1.3rem; display: flex; align-items: center; gap: 8px; }
-    label { display: block; margin: 12px 0 5px; font-weight: bold; font-size: 0.9rem; }
-    input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
-    button { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; transition: 0.2s; }
-    .btn-main { background: #667eea; color: white; margin-bottom: 10px; }
-    .btn-main:active { transform: scale(0.98); }
-    .btn-sub { background: #edf2f7; color: #4a5568; margin-top: 10px; }
-    .history-item { border-bottom: 1px solid #eee; padding: 12px 0; display: flex; justify-content: space-between; align-items: center; }
-    .total-box { background: #667eea; color: white; padding: 15px; border-radius: 8px; text-align: center; margin-top: 10px; }
-    .total-km { font-size: 1.5rem; font-weight: bold; }
+    :root { --primary: #667eea; --dark: #2d3748; --light: #f7fafc; }
+    * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+    body { background: var(--light); margin: 0; padding-bottom: 50px; }
+    header { background: var(--primary); color: white; padding: 20px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
+    .nav { display: flex; justify-content: space-around; background: white; padding: 10px; sticky: top; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .nav-btn { border: none; background: none; font-weight: bold; color: #a0aec0; cursor: pointer; padding: 10px; }
+    .nav-btn.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
+    .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    h2 { font-size: 1.1rem; color: var(--dark); margin-top: 0; display: flex; justify-content: space-between; }
+    label { display: block; margin: 15px 0 5px; font-size: 0.85rem; font-weight: bold; }
+    input, select, textarea { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 1rem; }
+    button { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    .btn-save { background: var(--primary); color: white; font-size: 1rem; }
+    .btn-pdf { background: #48bb78; color: white; margin-top: 10px; }
+    .btn-sync { background: #edf2f7; color: var(--dark); }
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .stat-card { background: #f1f5f9; padding: 15px; border-radius: 8px; text-align: center; }
+    .stat-val { font-size: 1.2rem; font-weight: bold; color: var(--primary); }
+    .history-item { border-bottom: 1px solid #edf2f7; padding: 15px 0; font-size: 0.9rem; }
   </style>
 </head>
 <body>
 
-  <div class="card">
-    <h2>📝 Registrer Tur</h2>
-    <label>Dato:</label>
-    <input type="date" id="date">
-    
-    <label>Vælg Rute (Postnr-Rute):</label>
-    <select id="routeSelect"></select>
-    
-    <button class="btn-main" onclick="saveTrip()">✅ Gem Kørsel</button>
-  </div>
+<header>
+  <h1>🚚 Rute Tracker Pro</h1>
+</header>
 
-  <div class="card">
-    <h2>⚙️ Data Hentet fra Ark</h2>
-    <input type="text" id="sheetUrl" placeholder="Indsæt Google Sheet CSV URL...">
-    <button class="btn-sub" onclick="importData()">🔄 Opdater Ruter</button>
-  </div>
+<div class="nav">
+  <button class="nav-btn active" onclick="showTab('daily', this)">📝 Daglig</button>
+  <button class="nav-btn" onclick="showTab('dash', this)">📊 Dashboard</button>
+  <button class="nav-btn" onclick="showTab('history', this)">📅 Historik</button>
+  <button class="nav-btn" onclick="showTab('settings', this)">⚙️ Setup</button>
+</div>
 
-  <div class="card" id="historyCard">
-    <h2>📅 Historik</h2>
-    <div id="historyList"></div>
-    <div class="total-box">
-      <div style="font-size: 0.9rem; opacity: 0.9;">Samlet Skat km</div>
-      <div id="totalDisplay" class="total-km">0.0 km</div>
+<div class="container">
+  
+  <div id="daily" class="tab-content">
+    <div class="card">
+      <h2>Dagens Indtastning</h2>
+      <label>Dato</label>
+      <input type="date" id="date">
+      
+      <label>Vælg ruter (Hold Ctrl/Cmd nede for flere)</label>
+      <select id="routeSelect" multiple size="6"></select>
+      
+      <label>Arbejdstid (f.eks. 08:00 - 14:00)</label>
+      <input type="text" id="workTime" placeholder="Tidsrum...">
+      
+      <button class="btn-save" onclick="saveDay()">✅ Gem Arbejdsdag</button>
     </div>
-    <button class="btn-sub" style="background:#fff5f5; color:#c53030; border: 1px solid #fed7d7;" onclick="clearHistory()">Slet Historik</button>
   </div>
+
+  <div id="dash" class="tab-content" style="display:none">
+    <div class="card">
+      <h2>Status Oversigt</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-val" id="stat-km">0</div>
+          <div style="font-size: 0.7rem;">KM I ALT (SKAT)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" id="stat-houses">0</div>
+          <div style="font-size: 0.7rem;">HUSE I ALT</div>
+        </div>
+      </div>
+      <button class="btn-pdf" onclick="exportPDF()">📄 Eksporter PDF Rapport</button>
+    </div>
+  </div>
+
+  <div id="history" class="tab-content" style="display:none">
+    <div class="card">
+      <h2>Kørselslog & Acubiz</h2>
+      <div id="historyList"></div>
+    </div>
+  </div>
+
+  <div id="settings" class="tab-content" style="display:none">
+    <div class="card">
+      <h2>Teknisk Setup</h2>
+      <label>Google Sheets CSV URL</label>
+      <input type="text" id="sheetUrl" placeholder="Indsæt CSV link her...">
+      <button class="btn-sync" onclick="importFromSheets()">🔄 Synkroniser med Sheet</button>
+      <p style="font-size: 0.7rem; color: #666; margin-top:10px;">Data gemmes automatisk i browseren og kan tilgås på denne enhed.</p>
+    </div>
+  </div>
+
+</div>
 
 <script>
   let routes = [];
-  let trips = [];
+  let log = [];
 
   function init() {
     document.getElementById('date').value = new Date().toISOString().split('T')[0];
-    const savedRoutes = localStorage.getItem('routes_v3');
-    const savedTrips = localStorage.getItem('trips_v3');
-    const savedUrl = localStorage.getItem('sheetUrl_v3');
-    
-    if (savedRoutes) { routes = JSON.parse(savedRoutes); renderSelect(); }
-    if (savedTrips) { trips = JSON.parse(savedTrips); renderHistory(); }
-    if (savedUrl) { document.getElementById('sheetUrl').value = savedUrl; }
+    const r = localStorage.getItem('rt_routes'), l = localStorage.getItem('rt_log'), u = localStorage.getItem('rt_url');
+    if (r) { routes = JSON.parse(r); renderRoutes(); }
+    if (l) { log = JSON.parse(l); updateStats(); }
+    if (u) document.getElementById('sheetUrl').value = u;
   }
 
-  async function importData() {
+  async function importFromSheets() {
     let url = document.getElementById('sheetUrl').value.trim();
-    if (!url) return alert("Indsæt venligst en URL");
     if (url.includes('/edit')) url = url.replace(/\/edit.*$/, '/export?format=csv');
-
     try {
-      const response = await fetch(url);
-      const data = await response.text();
-      const rows = data.split('\n').slice(1);
-      
+      const res = await fetch(url);
+      const text = await res.text();
+      const rows = text.split('\n').slice(1);
       routes = rows.map(row => {
         const c = row.includes(';') ? row.split(';') : row.split(',');
-        // Kombinerer Kolonne A og Kolonne B med bindestreg
-        const combinedId = `${c[0]?.trim()}-${c[1]?.trim()}`;
-        return {
-          id: combinedId,
-          kmUd: c[9]?.trim(),   // Kolonne J
-          kmHjem: c[10]?.trim() // Kolonne K
+        return { 
+          id: `${c[0]?.trim()}-${c[1]?.trim()}`, 
+          houses: parseInt(c[3]) || 0,
+          kmUd: parseFloat(c[9]?.replace(',','.')) || 0, 
+          kmHjem: parseFloat(c[10]?.replace(',','.')) || 0,
+          start: c[5]?.trim(), end: c[6]?.trim() // Bruges til Acubiz checklist
         };
-      }).filter(r => r.kmUd && r.id.length > 1);
-
-      localStorage.setItem('routes_v3', JSON.stringify(routes));
-      localStorage.setItem('sheetUrl_v3', url);
-      renderSelect();
-      alert(`Succes! ${routes.length} ruter indlæst.`);
-    } catch (e) {
-      alert("Fejl ved hentning. Tjek dit link.");
-    }
+      }).filter(r => r.id.length > 2);
+      localStorage.setItem('rt_routes', JSON.stringify(routes));
+      localStorage.setItem('rt_url', url);
+      renderRoutes();
+      alert('Data synkroniseret!');
+    } catch(e) { alert('Kunne ikke hente data.'); }
   }
 
-  function renderSelect() {
+  function renderRoutes() {
     const s = document.getElementById('routeSelect');
-    s.innerHTML = routes.map(r => `<option value="${r.id}">${r.id}</option>`).join('');
+    s.innerHTML = routes.map(r => `<option value="${r.id}">${r.id} (${r.houses} huse)</option>`).join('');
   }
 
-  function saveTrip() {
-    const id = document.getElementById('routeSelect').value;
-    const date = document.getElementById('date').value;
-    const r = routes.find(x => x.id === id);
-    if (!r) return;
+  function saveDay() {
+    const selected = Array.from(document.getElementById('routeSelect').selectedOptions).map(o => o.value);
+    if (!selected.length) return alert('Vælg ruter!');
+    
+    const dayRoutes = selected.map(id => routes.find(r => r.id === id));
+    const totalHouses = dayRoutes.reduce((sum, r) => sum + r.houses, 0);
+    const skatKm = dayRoutes[0].kmUd + dayRoutes[dayRoutes.length-1].kmHjem;
+    
+    // Acubiz beregning (mellem ruter)
+    let acubizInfo = "";
+    if (dayRoutes.length > 1) {
+      for(let i=0; i < dayRoutes.length-1; i++) {
+        acubizInfo += `Fra ${dayRoutes[i].id} Slut → ${dayRoutes[i+1].id} Start\n`;
+      }
+    }
 
-    // Håndterer både komma og punktum i tallene
-    const ud = parseFloat(r.kmUd.replace(',','.'));
-    const hjem = parseFloat(r.kmHjem.replace(',','.'));
-    const total = (ud + hjem).toFixed(1);
+    const entry = {
+      date: document.getElementById('date').value,
+      ruter: selected.join(', '),
+      houses: totalHouses,
+      km: skatKm.toFixed(1),
+      tid: document.getElementById('workTime').value,
+      acubiz: acubizInfo
+    };
 
-    trips.push({ date, id, total });
-    localStorage.setItem('trips_v3', JSON.stringify(trips));
-    renderHistory();
+    log.push(entry);
+    localStorage.setItem('rt_log', JSON.stringify(log));
+    updateStats();
+    alert('Dag gemt i historikken!');
+  }
+
+  function updateStats() {
+    const totalKm = log.reduce((sum, e) => sum + parseFloat(e.km), 0);
+    const totalH = log.reduce((sum, e) => sum + e.houses, 0);
+    document.getElementById('stat-km').innerText = totalKm.toFixed(1);
+    document.getElementById('stat-houses').innerText = totalH;
   }
 
   function renderHistory() {
-    const list = document.getElementById('historyList');
-    let total = 0;
-    list.innerHTML = trips.map(t => {
-      total += parseFloat(t.total);
-      return `<div class="history-item"><div><b>${t.date}</b><br><small>${t.id}</small></div> <b>${t.total} km</b></div>`;
-    }).reverse().join('');
-    document.getElementById('totalDisplay').innerHTML = `${total.toFixed(1)} km`;
+    const h = document.getElementById('historyList');
+    h.innerHTML = log.map((e, i) => `
+      <div class="history-item">
+        <b>${e.date} | ${e.tid || 'Ingen tid'}</b><br>
+        Ruter: ${e.ruter}<br>
+        Skat: ${e.km} km | Huse: ${e.houses}<br>
+        <small style="color: #667eea">${e.acubiz ? '📍 Acubiz: ' + e.acubiz : ''}</small>
+      </div>
+    `).reverse().join('');
   }
 
-  function clearHistory() {
-    if (confirm("Vil du slette din historik?")) {
-      trips = [];
-      localStorage.removeItem('trips_v3');
-      renderHistory();
-    }
+  function showTab(id, btn) {
+    document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).style.display = 'block';
+    btn.classList.add('active');
+    if (id === 'history') renderHistory();
+  }
+
+  function exportPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.text("Kørselsrapport - " + new Date().toLocaleDateString(), 14, 15);
+    
+    const tableData = log.map(e => [e.date, e.ruter, e.houses, e.km + ' km', e.tid]);
+    doc.autoTable({
+      head: [['Dato', 'Ruter', 'Huse', 'Skat KM', 'Tid']],
+      body: tableData,
+      startY: 25
+    });
+    doc.save(`RuteLog_${new Date().toISOString().slice(0,10)}.pdf`);
   }
 
   init();
