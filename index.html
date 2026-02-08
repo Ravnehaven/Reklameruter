@@ -3,117 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rute Tracker Master</title>
+    <title>Rute Tracker - Master</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <style>
-        :root { --primary: #2563eb; --success: #16a34a; --danger: #dc2626; --bg: #f8fafc; }
-        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); margin: 0; color: #1e293b; }
-        header { background: #1e293b; color: white; padding: 1.5rem; text-align: center; }
-        nav { display: flex; justify-content: center; background: white; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 100; }
-        nav button { padding: 1rem 1.5rem; border: none; background: none; font-weight: 600; color: #64748b; cursor: pointer; }
-        nav button.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
-        .container { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
-        .card { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); margin-bottom: 1.5rem; }
-        h2 { margin-top: 0; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem; }
-        label { display: block; margin: 1rem 0 0.5rem; font-weight: 600; font-size: 0.875rem; }
-        input, select, textarea { width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-        button.main { background: var(--primary); color: white; border: none; padding: 1rem; border-radius: 8px; width: 100%; font-weight: 700; cursor: pointer; margin-top: 1rem; }
-        button.secondary { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; padding: 0.75rem; border-radius: 8px; cursor: pointer; }
-        .stat-box { text-align: center; padding: 1rem; background: #f1f5f9; border-radius: 8px; }
-        .stat-num { display: block; font-size: 1.5rem; font-weight: 800; color: var(--primary); }
-        .history-item { padding: 1rem; border-bottom: 1px solid #f1f5f9; position: relative; }
-        .badge { background: #dcfce7; color: #166534; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; }
+        body { font-family: sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto 20px; }
+        h1, h2 { color: #2563eb; text-align: center; }
+        label { display: block; margin: 15px 0 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+        button { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 16px; }
+        .btn-main { background: #2563eb; color: white; }
+        .btn-pdf { background: #16a34a; color: white; }
+        .btn-setup { background: #64748b; color: white; }
+        .history-item { background: #fff; padding: 15px; border-radius: 8px; border-left: 5px solid #2563eb; margin-bottom: 10px; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .section { display: none; }
+        .active { display: block; }
+        .nav { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
+        .nav b { cursor: pointer; padding: 10px; color: #64748b; }
+        .nav b.active-tab { color: #2563eb; border-bottom: 2px solid #2563eb; }
     </style>
 </head>
 <body>
 
-<header>
-    <h1 style="margin:0; font-size:1.5rem;">🚚 Rute Tracker Master</h1>
-</header>
+    <h1>🚚 Rute Tracker Master</h1>
 
-<nav>
-    <button onclick="tab('daily', this)" class="active">📝 Daglig</button>
-    <button onclick="tab('dash', this)">📊 Dashboard</button>
-    <button onclick="tab('history', this)">📅 Historik</button>
-    <button onclick="tab('setup', this)">⚙️ Setup</button>
-</nav>
+    <div class="nav">
+        <b id="t1" class="active-tab" onclick="show('daily', 't1')">DAGLIG</b>
+        <b id="t2" onclick="show('history', 't2')">HISTORIK</b>
+        <b id="t3" onclick="show('setup', 't3')">SETUP</b>
+    </div>
 
-<div class="container">
-    
-    <div id="daily" class="tab-content">
+    <div id="daily" class="section active">
         <div class="card">
-            <h2>Registrer Dagens Arbejde</h2>
-            <div class="grid">
-                <div>
-                    <label>Dato</label>
-                    <input type="date" id="date">
-                </div>
-                <div>
-                    <label>Arbejdstid (HH:MM - HH:MM)</label>
-                    <input type="text" id="worktime" placeholder="08:00 - 14:00">
-                </div>
-            </div>
-            
-            <label>Vælg ruter (Hold Ctrl/Cmd nede for flere)</label>
+            <label>Dato</label>
+            <input type="date" id="date">
+            <label>Vælg ruter (Hold Ctrl nede for flere)</label>
             <select id="routeSelect" multiple size="10"></select>
-            
-            <button class="main" onclick="saveDay()">💾 Gem & Beregn Arbejdsdag</button>
+            <label>Arbejdstid (f.eks. 08:00 - 15:00)</label>
+            <input type="text" id="worktime" placeholder="Indtast tid...">
+            <button class="btn-main" onclick="saveDay()">GEM ARBEJDSDAG</button>
         </div>
     </div>
 
-    <div id="dash" class="tab-content" style="display:none">
+    <div id="history" class="section">
         <div class="card">
-            <h2>Oversigt & Skatterapport</h2>
-            <div class="grid">
-                <div class="stat-box">
-                    <span class="stat-num" id="stat-km">0</span>
-                    <small>KM FRADRAG (SKAT)</small>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-num" id="stat-addr">0</span>
-                    <small>ADRESSER OMDELT</small>
-                </div>
+            <h2>Dashboard</h2>
+            <div id="stats" style="text-align:center; font-weight:bold; margin-bottom:20px;">
+                KM: <span id="totalKm">0</span> | Adresser: <span id="totalAddr">0</span>
             </div>
-            <div style="margin-top:1.5rem;">
-                <button class="main" style="background:var(--success)" onclick="exportPDF()">📄 Eksporter PDF Rapport</button>
-            </div>
+            <button class="btn-pdf" onclick="exportPDF()">EKSPORTER PDF</button>
         </div>
+        <div id="historyList"></div>
+        <button onclick="clearAll()" style="color:red; background:none;">Slet alt historik</button>
     </div>
 
-    <div id="history" class="tab-content" style="display:none">
+    <div id="setup" class="section">
         <div class="card">
-            <h2>Gemt Historik & Acubiz Checklist</h2>
-            <div id="historyList"></div>
-            <button class="secondary" style="width:100%; margin-top:2rem; color:var(--danger)" onclick="clearLog()">🗑️ Slet al historik</button>
-        </div>
-    </div>
-
-    <div id="setup" class="tab-content" style="display:none">
-        <div class="card">
-            <h2>Teknisk Setup</h2>
-            <label>Google Sheets CSV URL (Udgiv på nettet)</label>
-            <input type="text" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/...">
-            <button class="main" onclick="sync()">🔄 Synkroniser med Sheet</button>
-            <p style="font-size:0.8rem; color:#64748b; margin-top:1rem;">
-                <b>Vigtigt:</b> Appen læser Kolonne A (Postnr), B (Rutenr), D (Adresser), J (Hjem->Ud), K (Hjem->Slut), E (Start-adresse), F (Slut-adresse).
+            <h2>Opsætning</h2>
+            <label>Google Sheets CSV URL</label>
+            <input type="text" id="sheetUrl" placeholder="Indsæt CSV-link her...">
+            <button class="btn-setup" onclick="sync()">HENT DATA FRA ARK</button>
+            <p style="font-size:12px; color:#666; margin-top:15px;">
+                Ark-struktur: A:Postnr, B:Rutenr, D:Adresser, E:Start-adr, F:Slut-adr, J:KM Ud, K:KM Hjem.
             </p>
         </div>
     </div>
 
-</div>
-
 <script>
-    let db_routes = JSON.parse(localStorage.getItem('m_routes') || '[]');
-    let db_log = JSON.parse(localStorage.getItem('m_log') || '[]');
+    let routes = JSON.parse(localStorage.getItem('master_routes') || '[]');
+    let log = JSON.parse(localStorage.getItem('master_log') || '[]');
 
     function init() {
         document.getElementById('date').value = new Date().toISOString().split('T')[0];
-        const url = localStorage.getItem('m_url');
+        const url = localStorage.getItem('master_url');
         if (url) document.getElementById('sheetUrl').value = url;
         renderRoutes();
-        updateStats();
+        renderHistory();
     }
 
     async function sync() {
@@ -126,101 +92,91 @@
             const rows = text.split(/\r?\n/).filter(r => r.trim() !== "");
             const sep = rows[0].includes(';') ? ';' : ',';
 
-            db_routes = rows.slice(1).map(row => {
+            routes = rows.slice(1).map(row => {
                 const c = row.split(sep);
                 return {
                     id: `${c[0]?.trim()}-${c[1]?.trim()}`,
                     addr: parseInt(c[3]) || 0,
                     kmUd: parseFloat(c[9]?.replace(',','.')) || 0,
-                    kmSlut: parseFloat(c[10]?.replace(',','.')) || 0,
-                    startAddr: c[4]?.trim() || '', // Kolonne E
-                    endAddr: c[5]?.trim() || ''    // Kolonne F
+                    kmHjem: parseFloat(c[10]?.replace(',','.')) || 0,
+                    start: c[4]?.trim() || '',
+                    slut: c[5]?.trim() || ''
                 };
             }).filter(r => r.id.length > 2);
 
-            localStorage.setItem('m_routes', JSON.stringify(db_routes));
-            localStorage.setItem('m_url', url);
+            localStorage.setItem('master_routes', JSON.stringify(routes));
+            localStorage.setItem('master_url', url);
             renderRoutes();
-            alert('Synkroniseret! ' + db_routes.length + ' ruter fundet.');
-        } catch (e) { alert('Fejl: Tjek dit link.'); }
+            alert('Synkroniseret! ' + routes.length + ' ruter fundet.');
+            show('daily', 't1');
+        } catch (e) { alert('Fejl: Tjek dit link og om det er "Udgivet på nettet" som CSV.'); }
     }
 
     function renderRoutes() {
         const s = document.getElementById('routeSelect');
-        s.innerHTML = db_routes.map(r => `<option value="${r.id}">${r.id} (${r.addr} adr.)</option>`).join('');
+        s.innerHTML = routes.map(r => `<option value="${r.id}">${r.id} (${r.addr} adr.)</option>`).join('');
     }
 
     function saveDay() {
         const selected = Array.from(document.getElementById('routeSelect').selectedOptions).map(o => o.value);
-        if(!selected.length) return alert('Vælg mindst én rute!');
+        if(!selected.length) return alert('Vælg ruter!');
 
-        const dayR = selected.map(id => db_routes.find(r => r.id === id));
+        const dayR = selected.map(id => routes.find(r => r.id === id));
         const totalA = dayR.reduce((s, r) => s + r.addr, 0);
-        const kmSkat = (dayR[0].kmUd + dayR[dayR.length-1].kmSlut).toFixed(1);
+        const kmSkat = (dayR[0].kmUd + dayR[dayR.length-1].kmHjem).toFixed(1);
         
         let acubiz = [];
         for(let i=0; i < dayR.length-1; i++) {
-            acubiz.push(`Fra ${dayR[i].id} (${dayR[i].endAddr}) → Til ${dayR[i+1].id} (${dayR[i+1].startAddr})`);
+            acubiz.push(`Fra ${dayR[i].id} Slut (${dayR[i].slut}) → ${dayR[i+1].id} Start (${dayR[i+1].start})`);
         }
 
-        const entry = {
+        log.push({
             date: document.getElementById('date').value,
-            worktime: document.getElementById('worktime').value || '--:--',
+            time: document.getElementById('worktime').value || '--',
             ruter: selected.join(', '),
             addr: totalA,
             km: kmSkat,
             acubiz: acubiz
-        };
+        });
 
-        db_log.push(entry);
-        localStorage.setItem('m_log', JSON.stringify(db_log));
-        updateStats();
+        localStorage.setItem('master_log', JSON.stringify(log));
+        renderHistory();
         alert('Gemt!');
-    }
-
-    function updateStats() {
-        const km = db_log.reduce((s, e) => s + parseFloat(e.km), 0);
-        const adr = db_log.reduce((s, e) => s + e.addr, 0);
-        document.getElementById('stat-km').innerText = km.toFixed(1);
-        document.getElementById('stat-addr').innerText = adr;
-    }
-
-    function tab(id, btn) {
-        document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
-        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-        document.getElementById(id).style.display = 'block';
-        btn.classList.add('active');
-        if(id === 'history') renderHistory();
     }
 
     function renderHistory() {
         const list = document.getElementById('historyList');
-        list.innerHTML = db_log.map(e => `
-            <div class="history-item">
-                <span class="badge">${e.date}</span> <b>${e.worktime}</b><br>
-                <b>Ruter:</b> ${e.ruter}<br>
-                <b>Skat:</b> ${e.km} km | <b>Adresser:</b> ${e.addr}<br>
-                ${e.acubiz.length ? `<small style="color:var(--primary)">📍 Acubiz: ${e.acubiz.join('<br>')}</small>` : ''}
-            </div>
-        `).reverse().join('');
+        let tk = 0, ta = 0;
+        list.innerHTML = log.map(e => {
+            tk += parseFloat(e.km); ta += e.addr;
+            return `<div class="history-item">
+                <b>${e.date} (${e.time})</b><br>
+                Ruter: ${e.ruter}<br>
+                Skat: ${e.km} km | Adresser: ${e.addr}<br>
+                ${e.acubiz.length ? `<small style="color:#2563eb">📍 Acubiz:<br>${e.acubiz.join('<br>')}</small>` : ''}
+            </div>`;
+        }).reverse().join('');
+        document.getElementById('totalKm').innerText = tk.toFixed(1);
+        document.getElementById('totalAddr').innerText = ta;
+    }
+
+    function show(id, tId) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav b').forEach(b => b.classList.remove('active-tab'));
+        document.getElementById(id).classList.add('active');
+        document.getElementById(tId).classList.add('active-tab');
     }
 
     function exportPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        doc.text("Kørsels- og Omdelingsrapport", 14, 15);
-        const data = db_log.map(e => [e.date, e.ruter, e.addr, e.km + ' km', e.worktime]);
-        doc.autoTable({
-            head: [['Dato', 'Ruter', 'Adresser', 'Skat KM', 'Tid']],
-            body: data,
-            startY: 25
-        });
-        doc.save(`Rapport_${new Date().toISOString().slice(0,10)}.pdf`);
+        doc.text("Kørselsrapport", 14, 15);
+        const data = log.map(e => [e.date, e.ruter, e.addr, e.km, e.time]);
+        doc.autoTable({ head: [['Dato', 'Ruter', 'Adr.', 'KM', 'Tid']], body: data, startY: 20 });
+        doc.save('Rapport.pdf');
     }
 
-    function clearLog() {
-        if(confirm('Slet alt?')) { db_log = []; localStorage.removeItem('m_log'); updateStats(); renderHistory(); }
-    }
+    function clearAll() { if(confirm('Slet alt?')) { log = []; localStorage.removeItem('master_log'); renderHistory(); } }
 
     init();
 </script>
