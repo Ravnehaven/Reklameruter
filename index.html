@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rute Tracker Pro - 4640 Edition</title>
+  <title>Rute Tracker Pro</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
   <style>
@@ -12,11 +12,10 @@
     body { background: var(--light); margin: 0; padding-bottom: 50px; }
     header { background: var(--primary); color: white; padding: 20px; text-align: center; }
     .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
-    .nav { display: flex; justify-content: space-around; background: white; padding: 10px; sticky: top; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .nav { display: flex; justify-content: space-around; background: white; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }
     .nav-btn { border: none; background: none; font-weight: bold; color: #a0aec0; cursor: pointer; padding: 10px; }
     .nav-btn.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
     .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
-    h2 { font-size: 1.1rem; color: var(--dark); margin-top: 0; }
     label { display: block; margin: 15px 0 5px; font-size: 0.85rem; font-weight: bold; }
     input, select { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 1rem; }
     button { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
@@ -50,7 +49,7 @@
       <label>Dato</label>
       <input type="date" id="date">
       <label>Vælg ruter (Hold Ctrl nede for flere)</label>
-      <select id="routeSelect" multiple size="8"></select>
+      <select id="routeSelect" multiple size="10"></select>
       <label>Arbejdstid (f.eks. 08:30 - 15:00)</label>
       <input type="text" id="workTime" placeholder="Tidsrum...">
       <button class="btn-save" onclick="saveDay()">✅ Gem Arbejdsdag</button>
@@ -63,11 +62,11 @@
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-val" id="stat-km">0.0</div>
-          <div style="font-size: 0.7rem;">KM (SKAT FRADRAG)</div>
+          <div>KM (SKAT)</div>
         </div>
         <div class="stat-card">
           <div class="stat-val" id="stat-addr">0</div>
-          <div style="font-size: 0.7rem;">ANTAL ADRESSER</div>
+          <div>ADRESSER</div>
         </div>
       </div>
       <button class="btn-pdf" onclick="exportPDF()">📄 Eksporter PDF Rapport</button>
@@ -76,16 +75,17 @@
 
   <div id="history" class="tab-content" style="display:none">
     <div class="card">
-      <h2>Historik & Acubiz Tjek</h2>
+      <h2>Historik</h2>
       <div id="historyList"></div>
+      <button class="btn-pdf" style="background:#fff5f5; color:#c53030; border:1px solid #fed7d7; margin-top:20px;" onclick="clearHistory()">Slet Historik</button>
     </div>
   </div>
 
   <div id="settings" class="tab-content" style="display:none">
     <div class="card">
-      <h2>Forbind til Google Sheet</h2>
-      <label>CSV URL (Fra 'Udgiv på nettet')</label>
-      <input type="text" id="sheetUrl" placeholder="Indsæt link her...">
+      <h2>Opsætning</h2>
+      <label>Google Sheets CSV URL</label>
+      <input type="text" id="sheetUrl" placeholder="Indsæt CSV link her...">
       <button class="btn-sync" onclick="importFromSheets()">🔄 Hent Rutedata</button>
     </div>
   </div>
@@ -107,27 +107,39 @@
   async function importFromSheets() {
     let url = document.getElementById('sheetUrl').value.trim();
     if (url.includes('/edit')) url = url.replace(/\/edit.*$/, '/export?format=csv');
+    
     try {
       const res = await fetch(url);
       const text = await res.text();
       const rows = text.split(/\r?\n/).filter(row => row.trim() !== "");
       const separator = rows[0].includes(';') ? ';' : ',';
+      
+      const headers = rows[0].split(separator).map(h => h.trim().toLowerCase());
+      
+      // Find kolonner dynamisk ud fra navne (A, B, D, J, K)
+      const idxA = 0; // Postnr
+      const idxB = 1; // Rutenr
+      const idxAddr = 3; // Adresser (D)
+      const idxUd = 9; // Ud (J)
+      const idxHjem = 10; // Hjem (K)
 
       routes = rows.slice(1).map(row => {
         const c = row.split(separator);
+        const p = c[idxA]?.trim() || "";
+        const r = c[idxB]?.trim() || "";
         return { 
-          id: `${c[0]?.trim()}-${c[1]?.trim()}`, 
-          addr: parseInt(c[3]) || 0, // Kolonne D
-          kmUd: parseFloat(c[9]?.replace(',','.')) || 0, // Kolonne J
-          kmHjem: parseFloat(c[10]?.replace(',','.')) || 0 // Kolonne K
+          id: p && r ? `${p}-${r}` : r || p, 
+          addr: parseInt(c[idxAddr]) || 0,
+          kmUd: parseFloat(c[idxUd]?.replace(',','.')) || 0, 
+          kmHjem: parseFloat(c[idxHjem]?.replace(',','.')) || 0
         };
       }).filter(r => r.id.length > 2);
 
       localStorage.setItem('rt_routes', JSON.stringify(routes));
       localStorage.setItem('rt_url', url);
       renderRoutes();
-      alert(`Hentet ${routes.length} ruter.`);
-    } catch(e) { alert('Fejl ved import.'); }
+      alert(`Succes! Hentet ${routes.length} ruter.`);
+    } catch(e) { alert('Fejl ved hentning af data.'); }
   }
 
   function renderRoutes() {
@@ -153,7 +165,7 @@
 
     localStorage.setItem('rt_log', JSON.stringify(log));
     updateStats();
-    alert('Dag gemt!');
+    alert('Arbejdsdag gemt!');
   }
 
   function updateStats() {
@@ -169,7 +181,7 @@
       <div class="history-item">
         <b>${e.date}</b> | ${e.tid || '--'} <br>
         Ruter: ${e.ruter} <br>
-        Fradrag: ${e.km} km | Adresser: ${e.addr}
+        Skat: ${e.km} km | Adresser: ${e.addr}
       </div>
     `).reverse().join('');
   }
@@ -185,14 +197,28 @@
   function exportPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    doc.text("Rapport for omdeling", 14, 15);
+    doc.setFontSize(18);
+    doc.text("Kørselsrapport", 14, 20);
+    doc.setFontSize(10);
+    doc.text("Genereret: " + new Date().toLocaleDateString(), 14, 28);
+    
     const tableData = log.map(e => [e.date, e.ruter, e.addr, e.km + ' km', e.tid]);
     doc.autoTable({
       head: [['Dato', 'Ruter', 'Adresser', 'Skat KM', 'Tid']],
       body: tableData,
-      startY: 25
+      startY: 35,
+      theme: 'striped'
     });
-    doc.save(`Omdeling_Log.pdf`);
+    doc.save(`Rute_Rapport_${new Date().toISOString().slice(0,10)}.pdf`);
+  }
+
+  function clearHistory() {
+    if(confirm("Er du sikker på, at du vil slette hele din historik?")) {
+      log = [];
+      localStorage.removeItem('rt_log');
+      updateStats();
+      renderHistory();
+    }
   }
 
   init();
